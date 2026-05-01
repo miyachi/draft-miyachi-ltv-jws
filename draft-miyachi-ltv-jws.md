@@ -24,6 +24,8 @@ LTV-JWS は、署名属性、タイムスタンプ、検証情報（証明書、
 外部参照（refs）による間接署名および段階的な検証情報の追加を
 可能とする。
 
+demo pc から更新。
+
 # Status of This Memo
 
 This Internet-Draft is submitted in full conformance with the
