@@ -44,13 +44,13 @@ interpreted as described in RFC 2119.
 
 # Overview
 
-TBD
+## Goals
+## Design Principles
+## Relationship to JWS
 
 # Data Model
 
 ## JWS Structure
-
-TBD
 
 ## Protected Header
 
@@ -91,49 +91,46 @@ LTV-JWS では以下のいずれかの形式を利用する：
 
 payload を省略する Detached 形式は使用すべきではない（SHOULD NOT）。
 
-# LTV Extension
+## Signature
+
+# LTV Elements
 
 ## ltv (protected)
-
-TBD
+### signingTime
+### signingCertHash
 
 ## ltv (header)
+### validations
+### timestamp
+### archive
 
-TBD
+## ltv (payload)
+### refs
 
-## refs
-
-TBD
-
-## validations
-
-TBD
-
-## timestamp
-
-TBD
-
-## archive
-
-TBD
 
 # Processing
 
 ## ES-BES
-
-TBD
+### External Reference Hash Construction
+### Signature Input Construction
+### Signature Generation
+### Signature Validation
 
 ## ES-T
-
-TBD
+### Signature Timestamp Input Construction
+### Signature Timestamp Generation
+### Signature Timestamp Validation
 
 ## ES-XL
-
-TBD
+### Validation Information Construction
+### Validation Information Embedding
+### Validation Information Validation
 
 ## ES-A
-
-TBD
+### Archive Timestamp Input Construction
+### Archive Timestamp Generation
+### Archive Timestamp Validation
+### Archive Timestamp Addition
 
 # Security Considerations
 
