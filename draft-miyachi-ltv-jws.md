@@ -15,13 +15,13 @@ author:
 長期検証（Long-Term Validation: LTV）可能な署名を実現する
 軽量な長期署名フォーマット LTV-JWS を定義する。
 
-LTV-JWS は、署名属性、タイムスタンプ、検証情報（証明書、CRL、OCSP）、
-およびアーカイブ構造を最小限の拡張として導入することで、
-電子証明書の有効期限後および暗号アルゴリズムの危殆化後においても
-署名の有効性を継続的に検証可能とする。
+LTV-JWS は、署名拡張要素、タイムスタンプ、検証情報（証明書、CRL、OCSP）、
+およびアーカイブ構造を最小限の拡張として導入することで、長期間にわたり
+署名の有効性を検証可能とする。またアーカイブタイムスタンプにより、暗号
+アルゴリズムの危殆化対応においても有効性を継続的に検証可能とする。
 
-LTV-JWS は、JWS のシンプルな構造とコンセプトを維持しつつ、
-外部参照（refs）による間接署名および段階的な検証情報の追加を
+LTV-JWS は、JWS のシンプルな構造とコンセプトを維持しつつ、段階的な検証
+情報を追加する。また外部参照（refs）による間接署名により汎用的な利用を
 可能とする。
 
 # Status of This Memo
@@ -31,19 +31,24 @@ provisions of BCP 78 and BCP 79.
 
 # Introduction
 
-JSONデータの真正性を保証するためには、多くの場合、JSON Web Signatures
-(JWS) [RFC7515] を使用します。JSONデータを長期保管する場合には、
+JSONデータの真正性を保証するために、多くの場合、JSON Web Signatures
+(JWS) [RFC7515] を使用する。JSONデータを長期保管する場合には、
 署名証明書の有効期限切れや暗号アルゴリズムの危殆化が問題となる。
-長期検証（Long-Term Validation: LTV）のアプローチは、検証情報（証明書、CRL、OCSP）
-およびタイムスタンプ [RFC 3161] を追加して行くことで、段階的にJWSを保護する。
+
+長期検証（Long-Term Validation: LTV）のアプローチとして、ベース署名（SIG-B）、
+署名タイムスタンプ付き署名（SIG-T）、検証情報を含む長期検証署名（SIG-LTV）、
+およびアーカイブタイムスタンプによる長期保管署名（SIG-LTA）の4ステップを定義する。
+更に検証情報およびアーカイブタイムスタンプを継続的に追加することで、
+署名の有効性の継続的な検証を可能とし、暗号アルゴリズムの危殆化後においても
+有効性の検証を可能とする。
 
 Long-Term Validation for JSON Web Signature (LTV-JWS) は、XML署名の
 長期検証を実現するXAdES（XML Advanced Electronic Signature）と類似した
-長期検証のアプローチと、JWS JSON Serializationをベースとすることで、
+長期検証のアプローチと、JWS JSON Serializationのformatをベースとすることで、
 長期検証可能な長期署名フォーマットを実現する、JWS拡張仕様である。
 
 また署名対象としてJSONデータ以外の任意の複数ファイルを利用可能とする
-ため、外部参照（refs）による間接署名（Indirect Signing）の仕組みを
+ため、外部参照（refs）による間接署名（detached reference）の仕組みを
 サポートする。外部参照の仕組みによりJWSをより汎用的な署名として利用できる。
 
 LTV-JWSはインターネット上で手軽に利用することを目的として、JWSに対して
@@ -57,18 +62,27 @@ LTV-JWSを用いることで、インターネットで利用される各種のJ
 
 # Terminology
 
-The key words "MUST", "SHOULD", and "MAY" in this document are to be
-interpreted as described in RFC 2119.
-- LTV: Long-Term Validation
-- ES-BES, ES-T, ES-XL, ES-A
-- Indirect Signing
-- External Reference (refs)
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL",
+"SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",
+"NOT RECOMMENDED", "MAY", and "OPTIONAL" in this
+document are to be interpreted as described in BCP 14
+[RFC2119] [RFC8174] when, and only when, they appear in
+all capitals, as shown here.
+
+- **LTV (Long-Term Validation)**: a validation model that preserves the ability to verify the validity of a signature over extended periods of time by using timestamps, validation information, and renewable archive protection.
+- **SIG-B (Signature Base level)**: The base signature level of LTV-JWS consisting of a JWS containing a protected signing certificate hash.
+- **SIG-T (Signature Timestamp level)**: A signature level extending SIG-B by adding a timestamp used to provide trusted proof that the signature existed at a specific point in time.
+- **SIG-LTV (Signature Long-Term Validation level)**: A signature level extending SIG-T by adding all validation information required for long-term validation of the signature.
+- **SIG-LTA (Signature Long-Term Archive timestamp level)**: A signature level extending SIG-LTV by adding an archive timestamp used to preserve the entire validation state of the signature.
+- **External Reference (refs)**: An indirect signing model for external data using the "refs" array containing external references with hash values. Verification of this indirect signing model requires hash validation in addition to signature verification.
 
 # Overview
 
+## LTV Diagram
 ## Goals
 ## Design Principles
 ## Relationship to JWS
+
 
 # Data Model
 
@@ -115,40 +129,44 @@ payload を省略する Detached 形式は使用すべきではない（SHOULD N
 
 ## Signature
 
-# LTV Elements
+# LTV Objects
 
-## ltv (protected)
-### signingTime
-### signingCertHash
+## ltv Protected Header Object
+### ltv.signingTime
+### ltv.signingCertHash
 
-## ltv (header)
-### validations
-### timestamp
-### archive
+## ltv Unprotected Header Object
+### ltv.validations
+### ltv.timestamp
+### ltv.archive
+#### ltv.archive.payload (renew digests)
+#### ltv.archive.timestamp
+#### ltv.archive.validations
+#### ltv.archive.archive...
 
-## ltv (payload)
-### refs
+## ltv Payload Object
+### ltv.refs
 
 
 # Processing
 
-## ES-BES
+## SIG-B
 ### External Reference Hash Construction
 ### Signature Input Construction
 ### Signature Generation
 ### Signature Validation
 
-## ES-T
+## SIG-T
 ### Signature Timestamp Input Construction
 ### Signature Timestamp Generation
 ### Signature Timestamp Validation
 
-## ES-XL
+## SIG-LTV
 ### Validation Information Construction
 ### Validation Information Embedding
 ### Validation Information Validation
 
-## ES-A
+## SIG-LTA
 ### Archive Timestamp Input Construction
 ### Archive Timestamp Generation
 ### Archive Timestamp Validation
