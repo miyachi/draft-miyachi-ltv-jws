@@ -11,18 +11,14 @@ author:
 
 # Abstract
 
-本仕様は、JSON Web Signature（JWS, RFC 7515）を拡張し、
-長期検証（Long-Term Validation: LTV）可能な署名を実現する
-軽量な長期署名フォーマット LTV-JWS を定義する。
+This specification extends JSON Web Signature (JWS, RFC 7515) and defines LTV-JWS, a lightweight long-term signature format for Long-Term Validation (LTV).
+（本仕様は、JSON Web Signature（JWS, RFC 7515）を拡張し、長期検証（Long-Term Validation: LTV）可能な署名を実現する軽量な長期署名フォーマット LTV-JWS を定義する。）
 
-LTV-JWS は、署名拡張要素、タイムスタンプ、検証情報（証明書、CRL、OCSP）、
-およびアーカイブ構造を最小限の拡張として導入することで、長期間にわたり
-署名の有効性を検証可能とする。またアーカイブタイムスタンプにより、暗号
-アルゴリズムの危殆化対応においても有効性を継続的に検証可能とする。
+LTV-JWS adds signature extension elements, timestamps, validation information (certificates, CRLs, and OCSP responses), and archive structures as minimal extensions, thereby enabling the validity of signatures to be verified over extended periods of time. In addition, archive timestamps enable continued validation even after the obsolescence or compromise of cryptographic algorithms.
+（LTV-JWS は、署名拡張要素、タイムスタンプ、検証情報（証明書、CRL、OCSP）、およびアーカイブ構造を最小限の拡張として導入することで、長期間にわたり署名の有効性を検証可能とする。またアーカイブタイムスタンプにより、暗号アルゴリズムの危殆化対応においても有効性を継続的に検証可能とする。）
 
-LTV-JWS は、JWS のシンプルな構造とコンセプトを維持しつつ、段階的な検証
-情報を追加する。また外部参照（refs）による間接署名により汎用的な利用を
-可能とする。
+LTV-JWS preserves the simple structure and concept of JWS while progressively adding timestamps and validation information. It also enables more general-purpose signing use cases through indirect signatures using external references (refs).
+（LTV-JWS は、JWS のシンプルな構造とコンセプトを維持しつつ、段階的な検証情報およびタイムスタンプを追加する。また外部参照（refs）による間接署名により汎用的な利用を可能とする。）
 
 # Status of This Memo
 
@@ -31,25 +27,17 @@ provisions of BCP 78 and BCP 79.
 
 # Introduction
 
-JSONデータの真正性を保証するために、多くの場合、JSON Web Signatures
-(JWS) [RFC7515] を使用する。JSONデータを長期保管する場合には、
-署名証明書の有効期限切れや暗号アルゴリズムの危殆化が問題となる。
+JSON Web Signatures (JWS) [RFC7515], a JSON-based signature format, are widely used to ensure the authenticity of target data. When data and JWS objects are stored over long periods of time, issues arise such as the expiration of signing certificates and the obsolescence or compromise of cryptographic algorithms.
+（JSONベースの署名形式である JSON Web Signatures (JWS) [RFC7515] は、対象データの真正性を保証するために広く利用されている。長期間にわたりデータとJWSを保管する場合には、署名証明書の有効期限切れや暗号アルゴリズムの危殆化が問題となる。）
 
-長期検証（Long-Term Validation: LTV）のアプローチとして、ベース署名（SIG-B）、
-署名タイムスタンプ付き署名（SIG-T）、検証情報を含む長期検証署名（SIG-LTV）、
-およびアーカイブタイムスタンプによる長期保管署名（SIG-LTA）の4ステップを定義する。
-更に検証情報およびアーカイブタイムスタンプを継続的に追加することで、
-署名の有効性の継続的な検証を可能とし、暗号アルゴリズムの危殆化後においても
-有効性の検証を可能とする。
+As an approach to Long-Term Validation (LTV), this specification defines four signature levels: the base signature level (SIG-B), the signature timestamp level (SIG-T), the long-term validation signature level containing validation information (SIG-LTV), and the long-term archive timestamp signature level (SIG-LTA). Furthermore, the continued addition of validation information and archive timestamps enables continued verification of signature validity, even after the obsolescence or compromise of cryptographic algorithms.
+（長期検証（Long-Term Validation: LTV）のアプローチとして、ベース署名（SIG-B）、署名タイムスタンプ付き署名（SIG-T）、検証情報を含む長期検証署名（SIG-LTV）、およびアーカイブタイムスタンプによる長期保管署名（SIG-LTA）の4ステップを定義する。更に検証情報およびアーカイブタイムスタンプを継続的に追加することで、署名の有効性の継続的な検証を可能とし、暗号アルゴリズムの危殆化後においても有効性の検証を可能とする。）
 
-Long-Term Validation for JSON Web Signature (LTV-JWS) は、XML署名の
-長期検証を実現するXAdES（XML Advanced Electronic Signature）と類似した
-長期検証のアプローチと、JWS JSON Serializationのformatをベースとすることで、
-長期検証可能な長期署名フォーマットを実現する、JWS拡張仕様である。
+Long-Term Validation for JSON Web Signature (LTV-JWS) is a JWS extension specification that defines a long-term signature format based on JWS JSON Serialization and a long-term validation approach similar to XAdES (XML Advanced Electronic Signature) for XML signatures.
+（Long-Term Validation for JSON Web Signature (LTV-JWS) は、XML署名の長期検証を実現するXAdES（XML Advanced Electronic Signature）と類似した長期検証のアプローチと、JWS JSON Serializationのformatをベースとすることで、長期検証可能な長期署名フォーマットを実現する、JWS拡張仕様である。）
 
-また署名対象としてJSONデータ以外の任意の複数ファイルを利用可能とする
-ため、外部参照（refs）による間接署名（detached reference）の仕組みを
-サポートする。外部参照の仕組みによりJWSをより汎用的な署名として利用できる。
+In addition, this specification supports an indirect signing model using external references (refs), allowing multiple arbitrary files, including non-JSON data, to be used as indirect signature targets. This indirect signing mechanism enables JWS to be used as a more general-purpose signature.
+（また署名対象としてJSONデータ以外の任意の複数ファイルを利用可能とするため、外部参照（refs）による間接署名（detached reference）の仕組みをサポートする。外部参照の仕組みによりJWSをより汎用的な署名として利用できる。）
 
 LTV-JWSはインターネット上で手軽に利用することを目的として、JWSに対して
 最小限の構造と属性を追加することで、軽量な実装と利用を可能とする。
