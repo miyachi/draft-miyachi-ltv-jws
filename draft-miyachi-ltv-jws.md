@@ -39,14 +39,12 @@ Long-Term Validation for JSON Web Signature (LTV-JWS) is a JWS extension specifi
 In addition, this specification supports an indirect signing model using external references (refs), allowing multiple arbitrary files, including non-JSON data, to be used as indirect signature targets. This indirect signing mechanism enables JWS to be used as a more general-purpose signature.
 （また署名対象としてJSONデータ以外の任意の複数ファイルを利用可能とするため、外部参照（refs）による間接署名（detached reference）の仕組みをサポートする。外部参照の仕組みによりJWSをより汎用的な署名として利用できる。）
 
-LTV-JWSはインターネット上で手軽に利用することを目的として、JWSに対して
-最小限の構造と属性を追加することで、軽量な実装と利用を可能とする。
-特に署名対象やハッシュ対象はJWSの署名入力形式に従い、BASE64URLエンコード
-された要素をピリオド"."で結合する仕様とすることで、実装を容易とし、
-相互運用性を高める。
+LTV-JWS is designed for practical use over the Internet by enabling lightweight implementation and operation through the addition of only minimal structures and attributes to JWS.
+In particular, signing inputs and hash inputs follow the JWS signing input model, in which BASE64URL-encoded elements are concatenated using the period "." character, thereby simplifying implementation and improving interoperability.
+（LTV-JWSはインターネット上で手軽に利用することを目的として、JWSに対して最小限の構造と属性を追加することで、軽量な実装と利用を可能とする。特に署名対象やハッシュ対象はJWSの署名入力形式に従い、BASE64URLエンコードされた要素をピリオド"."で結合する仕様とすることで、実装を容易とし、相互運用性を高める。）
 
-LTV-JWSを用いることで、インターネットで利用される各種のJSONデータおよび
-任意形式のデータを、長期間にわたり真正性を検証可能とすることができる。
+By using LTV-JWS, various types of JSON data and arbitrary data formats used on the Internet can be verified for authenticity over extended periods of time.
+（LTV-JWSを用いることで、インターネットで利用される各種のJSONデータおよび任意形式のデータを、長期間にわたり真正性を検証可能とすることができる。）
 
 # Terminology
 
@@ -120,53 +118,105 @@ payload を省略する Detached 形式は使用すべきではない（SHOULD N
 # LTV Objects
 
 ## ltv Protected Header Object
-### ltv.signingTime
-### ltv.signingCertHash
+
+### "signingTime" Parameter
+
+### "signingCertHash" Object
+
+#### "hashAlg" Parameter
+The values "S256", "S384", and "S512" are shorthand identifiers for SHA-256, SHA-384, and SHA-512 respectively.
+
+#### "hashValue" Parameter
 
 ## ltv Unprotected Header Object
-### ltv.validations
-### ltv.timestamp
-### ltv.archive
-#### ltv.archive.payload (renew digests)
-#### ltv.archive.timestamp
-#### ltv.archive.validations
-#### ltv.archive.archive...
+
+### "validations" Object
+
+#### "certs" Parameter
+
+#### "crls" Parameter
+
+#### "ocsps" Parameter
+
+### "timestamp" Object
+
+#### "tst" Parameter
+
+#### "type" Parameter
+
+#### "validations" Object
+Uses the same "validations" object structure described above.
+
+### "archive" Object
+
+#### "payload" Object (refs renew digests)
+
+#### "timestamp" Object
+Uses the same "timestamp" object structure described above.
+
+#### "archive" (recursive Object)
 
 ## ltv Payload Object
-### ltv.refs
 
+### "refs" Array
+
+#### "uri" Parameter
+
+#### "hashAlg" Parameter
+Same as the "hashAlg" parameter described above.
+
+#### "hashValue" Parameter
+Same as the "hashValue" parameter described above.
+
+#### "type" Parameter
 
 # Processing
 
-## SIG-B
+## SIG-B (Signature Base level)
 ### External Reference Hash Construction
+#### type=raw (default)
+#### type=jws (Serial Signing)
 ### Signature Input Construction
 ### Signature Generation
 ### Signature Validation
 
-## SIG-T
+## SIG-T (Signature Timestamp level)
 ### Signature Timestamp Input Construction
 ### Signature Timestamp Generation
 ### Signature Timestamp Validation
 
-## SIG-LTV
+## SIG-LTV (Signature Long-Term Validation level)
 ### Validation Information Construction
+#### from SIG-T
+#### from SIG-LTA
 ### Validation Information Embedding
 ### Validation Information Validation
 
-## SIG-LTA
+## SIG-LTA (Signature Long-Term Archive timestamp level)
 ### Archive Timestamp Input Construction
 ### Archive Timestamp Generation
 ### Archive Timestamp Validation
-### Archive Timestamp Addition
+### Addition Validation Information and Next Archive Timestamp
 
 # Security Considerations
 
-TBD
+## Trust Model of Unprotected Header Information
+## Validation Requirements for External References
+## Timestamp and TSA Validation
+## Recursive Archive Validation
+## Cryptographic Algorithm Agility
+## Serial Signing Considerations
+## Canonicalization and Deterministic Inputs
+## Local Signing Time Considerations
+## Validation Information Freshness
 
 # IANA Considerations
 
-TBD
+## Registration of the "ltv" JOSE Header Parameter
+## LTV-JWS External Reference Type Registry
+## LTV-JWS Timestamp Type Registry
+## Hash Algorithm Identifiers
+## No New Cryptographic Algorithms
 
 # References
 
@@ -181,3 +231,15 @@ TBD
 ## Informative References
 
 TBD
+
+# Appendix: LTV-JWS Example
+
+## Example SIG-B
+## Example SIG-T
+## Example SIG-LTV
+## Example SIG-LTA
+## Example SIG-LTV 2nd generation
+## Example SIG-LTA 2nd generation
+## Example SIG-LTA refs renew digests
+
+
