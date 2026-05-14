@@ -1139,5 +1139,6 @@ LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RF
 ## Example SIG-LTV 2nd (examples/sig-ltv-2nd.json)
 ## Example SIG-LTA 2nd (examples/sig-lta-2nd.json)
 ## Example SIG-LTA refs renew digests (examples/sig-lta-rehash.json)
+## Example Chained Signing (examples/sig2.json, examples/sig1.json)
 
 
