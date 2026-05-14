@@ -6,7 +6,7 @@ category: info
 submissiontype: IETF
 author:
   - name: Naoto Miyachi
-    organization: Lang Edge Ltd.
+    organization: LangEdge,Inc.
 ---
 
 # Abstract
@@ -1132,12 +1132,12 @@ LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RF
 
 # Appendix: LTV-JWS Example
 
-## Example SIG-B
-## Example SIG-T
-## Example SIG-LTV
-## Example SIG-LTA
-## Example SIG-LTV 2nd generation
-## Example SIG-LTA 2nd generation
-## Example SIG-LTA refs renew digests
+## Example SIG-B (examples/sig-b.json)
+## Example SIG-T (examples/sig-t.json)
+## Example SIG-LTV (examples/sig-ltv.json)
+## Example SIG-LTA (examples/sig-lta.json)
+## Example SIG-LTV 2nd (examples/sig-ltv-2nd.json)
+## Example SIG-LTA 2nd (examples/sig-lta-2nd.json)
+## Example SIG-LTA refs renew digests (examples/sig-lta-rehash.json)
 
 
