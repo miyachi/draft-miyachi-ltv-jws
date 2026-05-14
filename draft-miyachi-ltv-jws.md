@@ -400,7 +400,7 @@ The "timestamp" object uses the same structure as the "timestamp" object defined
 
 The exact archive timestamp hash input construction is described in the "Archive Timestamp Input Construction" section.
 
-#### "rehashes" Parameter (refs renew digests)
+#### "rehashes" Parameter (refs renew hashes)
 
 The "rehashes" parameter contains renewed hash information for external references ("refs").
 
@@ -833,7 +833,7 @@ Where:
 * "DDDDDD" is the signature timestamp with validations
 * "EEEEEE" contains validations for the signing certificate
 * "FFFFFF" is the 1st archive timestamp with validations
-* "GGGGGG" contains renewal digests for refs
+* "GGGGGG" contains renewal hashes for refs
 * "HHHHHH" is the 2nd archive timestamp
 
 The following table shows the corresponding signature and
@@ -1138,7 +1138,7 @@ LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RF
 ## Example SIG-LTA (examples/sig-lta.json)
 ## Example SIG-LTV 2nd (examples/sig-ltv-2nd.json)
 ## Example SIG-LTA 2nd (examples/sig-lta-2nd.json)
-## Example SIG-LTA refs renew digests (examples/sig-lta-rehash.json)
+## Example SIG-LTA refs renew hashes (examples/sig-lta-rehash.json)
 ## Example Chained Signing (examples/sig2.json, examples/sig1.json)
 
 
