@@ -48,7 +48,7 @@ all capitals, as shown here.
 
 - **LTV (Long-Term Validation)**: a validation model that preserves the ability to verify the validity of a signature over extended periods of time by using timestamps, validation information, and renewable archive protection.
 - **SIG-B (Signature Base level)**: The base signature level of LTV-JWS consisting of a JWS containing a protected signing certificate hash.
-- **SIG-T (Signature Timestamp level)**: A signature level extending SIG-B by adding a timestamp used to provide trusted proof that the signature existed at a specific point in time.
+- **SIG-T (Signature Timestamp level)**: A signature level extending SIG-B by adding a signature timestamp used to provide trusted proof that the signature existed at a specific point in time.
 - **SIG-LTV (Signature Long-Term Validation level)**: A signature level extending SIG-T by adding all validation information required for long-term validation of the signature.
 - **SIG-LTA (Signature Long-Term Archive timestamp level)**: A signature level extending SIG-LTV by adding an archive timestamp used to preserve the entire validation state of the signature.
 - **External Reference (refs)**: An indirect signing model for external data using the "refs" array containing external references with hash values. Verification of this indirect signing model requires hash validation in addition to signature verification.
@@ -71,7 +71,7 @@ all capitals, as shown here.
                       |
                       v
   +---------------------------------------------+
-  | SIG-T (Add "timestamp")                     |
+  | SIG-T (Add "signature timestamp")           |
   | Signature Timestamp level                   |
   +-------------------+-------------------------+
                       |
@@ -85,7 +85,7 @@ all capitals, as shown here.
                         |                                 | renew archive
                         v                                 |
   +---------------------------------------------+         |
-  | SIG-LTA (Add "archive.timestamp")           |         |
+  | SIG-LTA (Add "archive timestamp")           |         |
   | Signature Long-Term Archive Timestamp level |         |
   +---------------------+-----------------------+         |
                         |                                 |
@@ -185,6 +185,12 @@ The relationship between LTV-JWS and JWS is summarized as follows:
 - LTV-JWS is designed to maintain compatibility with existing JWS processing and implementations whenever possible.
 
 BASE64 encoding is used for DER-encoded ASN.1 objects for compatibility with existing PKIX and RFC 7515 x5c processing models.
+
+LTV-JWS uses both BASE64URL encoding and BASE64 encoding depending on the type of data being represented.
+
+Values participating in JWS signing input construction, hash input construction, external reference hash processing, and hash-based identifiers use BASE64URL encoding consistent with RFC 7515 JWS processing and JOSE thumbprint conventions.
+
+DER-encoded PKIX and CMS related binary objects, including certificates, CRLs, OCSP responses, and RFC 3161 TimeStampTokens, use BASE64 encoding consistent with the "x5c" header parameter defined in RFC 7515.
 
 # Data Model
 
@@ -319,28 +325,26 @@ If OCSP responses are used during validation, implementations MUST preserve the 
 
 ### "signing" Parameter
 
-The "signing" parameter contains validation information
-required to validate the signing certificate used for the
+The "signing" parameter contains validation information required to validate the signing certificate used for the
 JWS signature.
 
-The "signing" parameter is used to preserve PKIX validation
-information for the signing certificate.
+The "signing" parameter is used to preserve PKIX validation information for the signing certificate.
 
-The value of the "signing" parameter is a BASE64URL-encoded
-JSON object containing a "validations" object.
+The value of the "signing" parameter is a BASE64URL-encoded JSON object containing a "validations" object.
 
-The "validations" object contained in the "signing"
-parameter uses the same structure as the "validations"
-object defined in "### "validations" Object".
+The "validations" object contained in the "signing" parameter uses the same structure as the "validations"
+object defined in ""validations" Object".
 
-The "signing" parameter is added to the "ltv" object in
-the unprotected header.
+The "signing" parameter is added to the "ltv" object in the unprotected header.
 
-Because the "signing" parameter is stored in the
-unprotected header, it is not directly protected by the
-JWS signature.
+Because the "signing" parameter is stored in the unprotected header, it is not directly protected by the JWS signature.
 
 However, it is protected by subsequent archive timestamps.
+
+The outer JSON object of the "signing" parameter is BASE64URL-encoded because it participates in archive timestamp hash input construction.
+
+This avoids ambiguity caused by JSON reserialization and enables deterministic reconstruction of archive timestamp hash inputs without requiring JSON canonicalization.
+However, DER-encoded PKIX-related binary objects contained within the embedded "validations" object use BASE64 encoding.
 
 ### "timestamp" Object
 
@@ -488,11 +492,15 @@ This specification defines the following "type" identifiers.
 
 ## Validation Reference Time
 
-If an immediately enclosing trusted timestamp or archive timestamp exists, its timestamp time is used as the validation reference time.
+The validation reference time depends on the validation target.
 
-Otherwise, the current time is used as the validation reference time.
+For SIG-B signature validation, if a valid signature timestamp exists, the signature timestamp time MUST be used as the validation reference time. If no valid signature timestamp exists, the current time MUST be used as the validation reference time, unless another trusted signing time is permitted by the applicable validation policy.
 
-The exact determination of trusted timestamps depends on the applicable validation policy.
+For validation of each "validations" object, if a corresponding archive timestamp protecting that validation information exists, the archive timestamp time MUST be used as the validation reference time. If no corresponding archive timestamp exists, the current time MUST be used as the validation reference time.
+
+For archive timestamp validation, the applicable validation reference time depends on the archive generation being validated and the applicable validation policy.
+
+The exact determination of trusted timestamps and validation reference times depends on the applicable validation policy.
 
 ## SIG-B (Signature Base level)
 
@@ -597,7 +605,7 @@ SIG-T provides trusted proof that the signature existed prior to a specific poin
 
 SIG-T is used to prove that the signature existed before expiration or revocation of the signing certificate.
 
-The SIG-T timestamp is generated over a hash input constructed from the JWS "protected", "payload", and "signature".
+The SIG-T signature timestamp is generated over a hash input constructed from the JWS "protected", "payload", and "signature".
 
 ### Signature Timestamp Input Construction
 
@@ -652,7 +660,7 @@ SIG-LTV is a signature level that preserves validation information required for 
 
 SIG-LTV MAY be constructed after validation of SIG-T or SIG-LTA.
 
-SIG-LTV preserves validation information used for validation of signing certificates and timestamp TSA certificates in order to enable Long-Term Validation of signatures in the future without depending on external validation services or network access.
+SIG-LTV preserves validation information used for validation of signing certificates and all timestamp TSA certificates in order to enable Long-Term Validation of signatures in the future without depending on external validation services or network access.
 
 ### Validation Information Embedding
 
@@ -697,54 +705,35 @@ If signature values, external reference hash values, or timestamp signatures are
 
 If multiple archive timestamps exist, validation may be performed from outer archive timestamps toward inner archive timestamps, or from inner archive timestamps toward outer archive timestamps, depending on implementation or validation policy.
 
-For validation of inner signatures, timestamps, validation information, and archive structures, the timestamp time of the immediately enclosing signature timestamp or archive timestamp SHOULD be used as the validation reference time.
+For recursive archive validation, implementations SHOULD apply validation processing consistently according to the validation reference time rules defined in the "Validation Reference Time" section.
 
 ## SIG-LTA (Signature Long-Term Archive Timestamp level)
 
-SIG-LTA is a signature level that continuously extends the
-long-term validity of signatures by incrementally adding
-archive timestamps to SIG-LTV.
+SIG-LTA is a signature level that continuously extends the long-term validity of signatures by incrementally adding archive timestamps to SIG-LTV.
 
-When SIG-LTA is generated for the first time, the first
-"archive" object is added as `header.ltv.archive`.
+When SIG-LTA is generated for the first time, the first "archive" object is added as `header.ltv.archive`.
 
-If an "archive" object already exists, long-term validity is
-continuously preserved by recursively adding the next
-"archive" object within the existing "archive" object.
+If an "archive" object already exists, long-term validity is continuously preserved by recursively adding the next "archive" object within the existing "archive" object.
 
-A newly added "archive" object MAY contain "rehashes", which
-stores renewed hash values for external references ("refs").
+A newly added "archive" object MAY contain "rehashes", which stores renewed hash values for external references ("refs").
 
-A newly added "archive" object also contains an archive
-timestamp "timestamp" used to protect all signatures,
-timestamps, validation information, and renewed hash
-information accumulated up to that point.
+A newly added "archive" object also contains an archive timestamp "timestamp" used to protect all signatures, timestamps, validation information, and renewed hash information accumulated up to that point.
 
 ### External Reference Hash Renewal (rehashes)
 
-"rehashes" stores renewed hash values for external references
-("refs").
+"rehashes" stores renewed hash values for external references ("refs").
 
-If the hash algorithm used for externally referenced data
-becomes obsolete or cryptographically weak, newly calculated
-hash values using a new hash algorithm are added as
-"rehashes".
+If the hash algorithm used for externally referenced data becomes obsolete or cryptographically weak, newly calculated hash values using a new hash algorithm are added as "rehashes".
 
-If "rehashes" is used, it MUST be added within the same
-"archive" object before generating the corresponding archive
-timestamp.
+If "rehashes" is used, it MUST be added within the same "archive" object before generating the corresponding archive timestamp.
 
 ### Archive Timestamp Input Construction
 
-The hash input for archive timestamps consists of
-BASE64URL-encoded elements concatenated using the "."
-character.
+The hash input for archive timestamps consists of BASE64URL-encoded elements concatenated using the "." character.
 
-The archive timestamp hash input is generated using the
-following procedure.
+The archive timestamp hash input is generated using the following procedure.
 
-1. Initialize the archive timestamp hash input as an empty
-   string.
+1. Initialize the archive timestamp hash input as an empty string.
 
 2. Append the value of JWS `protected`.
 
@@ -752,32 +741,22 @@ following procedure.
 
 4. Append the value of JWS `signature` prefixed with ".".
 
-5. Append the value of `header.ltv.timestamp`
-   prefixed with ".".
+5. Append the value of `header.ltv.timestamp` prefixed with ".".
 
-6. Append the value of `header.ltv.signing`
-   prefixed with ".".
+6. Append the value of `header.ltv.signing` prefixed with ".".
 
-7. If an `archive` object exists, process the contained
-   elements.
+7. If an `archive` object exists, process the contained elements.
 
 8. If `rehashes` exists within the `archive` object,
    append its value prefixed with ".".
 
-9. If `timestamp` exists within the `archive` object,
-   append its value prefixed with ".".
+9. If `timestamp` exists within the `archive` object, append its value prefixed with ".".
 
-10. If the next `archive` object exists within the current
-    `archive` object, process the next `archive` object
-    recursively and repeat from step 8.
+10. If the next `archive` object exists within the current `archive` object, process the next `archive` object recursively and repeat from step 8.
 
-11. Finally, calculate the hash value of the resulting hash
-    input and use the calculated hash value as the
-    `messageImprint` of the RFC 3161 timestamp request for the
-    target `archive.timestamp`.
+11. Finally, calculate the hash value of the resulting hash input and use the calculated hash value as the `messageImprint` of the RFC 3161 timestamp request for the target archive timestamp.
 
-For example, the hash input for a first-generation archive
-timestamp is as follows.
+For example, the hash input for a first-generation archive timestamp is as follows.
 
 ```text
 BASE64URL(protected) || "." ||
@@ -788,8 +767,8 @@ BASE64URL(header.ltv.signing)
 ```
 Figure 7: First-Generation Archive Timestamp Input
 
-For example, the hash input for a second-generation archive
-timestamp is as follows.
+For example, the hash input for a second-generation archive timestamp is as follows.
+
 ```text
 BASE64URL(protected) || "." ||
 BASE64URL(payload) || "." ||
@@ -800,8 +779,8 @@ BASE64URL(header.ltv.archive.timestamp)
 ```
 Figure 8: Second-Generation Archive Timestamp Input
 
-For example, the hash input for a third-generation archive
-timestamp using "rehashes" is as follows.
+For example, the hash input for a third-generation archive timestamp using "rehashes" is as follows.
+
 ```text
 BASE64URL(protected) || "." ||
 BASE64URL(payload) || "." ||
@@ -812,84 +791,344 @@ BASE64URL(header.ltv.archive.timestamp) || "." ||
 BASE64URL(header.ltv.archive.archive.timestamp) || "." ||
 BASE64URL(header.ltv.archive.archive.archive.rehashes)
 ```
-Figure 9: Third-Generation Archive Timestamp Input
-(rehashes included)
+Figure 9: Third-Generation Archive Timestamp Input (rehashes included)
+
+### Example of Signature Input and Timestamp Hash Inputs
+
+The following example illustrates the signature input and
+timestamp hash input progression for each signature level.
+
+The values "AAAAAA" and similar values represent
+BASE64URL-encoded strings.
+
+Example LTV-JWS object:
+
+~~~json
+{
+  "payload": "AAAAAA",
+  "protected": "BBBBBB",
+  "signature": "CCCCCC",
+  "header":
+  {
+    "ltv":
+    {
+      "timestamp": "DDDDDD",
+      "signing": "EEEEEE",
+      "archive":
+      {
+        "timestamp": "FFFFFF",
+        "archive":
+        {
+          "rehashes": "GGGGGG",
+          "timestamp": "HHHHHH"
+        }
+      }
+    }
+  }
+}
+~~~
+
+Where:
+
+* "DDDDDD" is the signature timestamp with validations
+* "EEEEEE" contains validations for the signing certificate
+* "FFFFFF" is the 1st archive timestamp with validations
+* "GGGGGG" contains renewal digests for refs
+* "HHHHHH" is the 2nd archive timestamp
+
+The following table shows the corresponding signature and
+timestamp hash inputs.
+
+| Signature Level | Input | Calculation Target |
+|---|---|---|
+| SIG-B | Signature | Signature over `"BBBBBB.AAAAAA"` |
+| SIG-T | Signature Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC"` |
+| SIG-LTA(1) | 1st Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE"` |
+| SIG-LTA(2) | 2nd Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE.FFFFFF.GGGGGG"` |
+
+The strings above represent the exact concatenated
+BASE64URL-encoded values used as signature input or
+timestamp hash input.
 
 ### Archive Timestamp Generation
 
-An archive timestamp is generated by creating an RFC 3161
-timestamp over the archive timestamp hash input.
+An archive timestamp is generated by creating an RFC 3161 timestamp over the archive timestamp hash input.
 
-The generated timestamp is stored as the corresponding
-"archive.timestamp".
+The generated timestamp is stored as the corresponding archive timestamp.
 
 ### Archive Timestamp Validation
 
-Archive timestamp validation MUST perform SIG-B signature
-validation, SIG-T timestamp validation, and validation using
-`validations` before validating all generations of
-`archive.timestamp`.
+Archive timestamp validation MUST perform SIG-B signature validation, SIG-T timestamp validation, and validation using `validations` before validating all generations of archive timestamps.
 
-For each `archive.timestamp`, the corresponding archive
-timestamp hash input MUST be reconstructed and verified to
-match the `messageImprint` value contained in the timestamp
-token.
+For each archive timestamp, the corresponding archive timestamp hash input MUST be reconstructed and verified to match the `messageImprint` value contained in the timestamp token.
 
-If archive objects recursively exist, all
-`archive.timestamp` values MUST be validated sequentially
-from the outermost archive object toward the innermost
-archive object.
+If archive objects recursively exist, implementations MAY validate archive timestamps from outermost to innermost, or from innermost to outermost, depending on implementation or validation policy.
 
 ### Next-Generation Archive Extension
 
-To continuously preserve the long-term validity of signatures,
-the next "archive" object is added within the existing
-"archive" object.
+To continuously preserve the long-term validity of signatures, the next "archive" object is added within the existing "archive" object.
 
-If necessary, new "rehashes" are added and a new archive
-timestamp is generated, thereby enabling continuous extension
-of long-term validity.
-
-
-
-
-
-
-
+If necessary, new "rehashes" are added and a new archive timestamp is generated, thereby enabling continuous extension of long-term validity.
 
 # Security Considerations
 
+LTV-JWS preserves the processing model and security properties of JWS [RFC7515].
+
+In addition, LTV-JWS adopts the long-term signature approach used in long-term signature formats such as XAdES.
+
+In the long-term signature approach, validation information and timestamps are maintained separately from the JWS signature in the unprotected header, and long-term integrity and authenticity are preserved through independent cryptographic protection and the continuous addition of archive timestamps.
+
+Once an archive timestamp has been added, information existing prior to that archive timestamp and covered by it is protected and SHOULD NOT be modified.
+
+Implementations MUST carefully validate all cryptographic inputs, timestamp and external reference hash inputs, certificate validation information, and timestamp tokens themselves defined in this specification.
+
+Improper validation processing, incorrect handling of unprotected header information, or incorrect interpretation of BASE64URL and BASE64 encoded values may result in incorrect validation results or loss of long-term signature validity.
+
 ## Trust Model of Unprotected Header Information
+
+LTV-JWS stores timestamps, validation information, and archive-related information in the unprotected header.
+
+Information stored in the unprotected header is not directly protected by the JWS signature.
+
+However, most validation information and timestamp-related information stored in the unprotected header are protected by existing PKIX/CMS signatures generated by CAs, OCSP responders, or TSAs.
+
+In addition, unprotected header information is subject to long-term integrity protection through archive timestamps.
+
+Implementations MUST NOT treat unprotected header information as trusted solely because such information is present in the JWS object.
+
+If archive timestamp validation fails, the associated unprotected header information MUST be treated as untrusted.
+
 ## Validation Requirements for External References
-## Timestamp and TSA Validation
+
+LTV-JWS supports indirect signing of externally referenced data through the "refs" array.
+
+Implementations MUST validate all external reference hash values associated with the signature.
+
+Successful JWS signature validation alone does not guarantee the integrity or authenticity of externally referenced data.
+
+If the recalculated hash value of externally referenced data does not match the corresponding "hashValue" parameter, the validation result MUST be treated as Invalid.
+
+LTV-JWS external references are limited to a single-level reference structure using the "refs" array within the payload, and recursive or multi-level external reference structures are not defined.
+
+This restriction simplifies external reference validation processing and prevents reference loops, complex dependency relationships, and ambiguity regarding validation scope.
+
+Implementations SHOULD carefully consider the trust model, retrieval method, and persistence of externally referenced data.
+
+The security and availability of externally referenced data are outside the scope of this specification.
+
+## Signature Timestamp and Archive Timestamp Validation
+
+LTV-JWS uses RFC 3161 timestamps to prove that signatures, validation information, and archive information existed prior to a specific point in time.
+
+A signature timestamp proves that the signed state consisting of the JWS protected header, payload, and signature existed prior to a specific point in time.
+
+An archive timestamp protects signatures, timestamps, validation information, and archive information existing prior to it, and enables continued long-term validation.
+
+Implementations MUST reconstruct the hash input of signature timestamps and archive timestamps according to the methods defined in this specification and verify that it matches the messageImprint contained in the TimeStampToken.
+
+Implementations MUST perform signature validation of all TimeStampTokens and PKIX validation of TSA certificates.
+
+If signature timestamp validation fails, the proof of existence (signature time) of the corresponding SIG-B based on that signature timestamp is not established.
+
+If archive timestamp validation fails, the proof of existence of the protected contents covered by the corresponding archive timestamp is not established.
+
+For long-term validation, implementations MUST perform timestamp and certificate validation using an appropriate validation reference time according to the long-term signature approach.
+
+The time of the signature timestamp MUST be used as the validation reference time for SIG-B signature validation.
+
+For validation of each validations object, the time of the closest archive timestamp protecting the corresponding validation information MUST be used as the validation reference time. If no corresponding archive timestamp exists, the current time MUST be used as the validation reference time.
+
+Improper timestamp validation or incorrect use of validation reference time may result in incorrect long-term validation results.
+
+## Validation Policy and Trust Anchors
+
+Validation results of LTV-JWS depend on the applicable validation policy and trust anchors.
+
+Even for the same LTV-JWS object, validation results may differ depending on the trust anchors used, revocation information, permitted cryptographic algorithms, timestamp validation conditions, determination of validation reference time, or policies regarding the use of external validation information.
+
+Implementations MUST appropriately manage trust anchors, certificate validation conditions, revocation checking conditions, timestamp validation conditions, and long-term validation requirements according to the applicable validation policy.
+
+During long-term validation, the retention period and availability of certificates, CRLs, OCSP responses, TimeStampTokens, and other validation information may affect validation results.
+
+Changes, removal, or revocation of trust anchors, or changes in validation policy, may cause an LTV-JWS object previously determined as Valid to later be determined as Indeterminate or Invalid.
+
+## Encoding Confusion Between BASE64URL and BASE64
+
+LTV-JWS uses both BASE64URL encoding and BASE64 encoding depending on the purpose of the represented data.
+
+Values used for JWS signing input construction, timestamp hash input construction, external reference hash input construction, and hash-based identifiers use BASE64URL encoding.
+
+In contrast, DER-encoded ASN.1 binary objects such as certificates, CRLs, OCSP responses, and RFC 3161 TimeStampTokens use BASE64 encoding consistent with the "x5c" parameter defined in RFC 7515.
+
+BASE64URL encoding and BASE64 encoding are not interchangeable and differ in character sets and padding rules.
+
+Implementations MUST use the correct encoding for each parameter and hash input construction defined in this specification.
+
+Incorrect encoding processing, incorrect decoding processing, or confusion between BASE64URL encoding and BASE64 encoding may result in signature validation failure, timestamp validation failure, external reference hash mismatch, or long-term validation failure.
+
 ## Recursive Archive Validation
+
+LTV-JWS preserves long-term signature validity by continuously adding archive timestamps using a recursive archive structure.
+
+Each archive timestamp protects signatures, timestamps, validation information, and archive information existing prior to it.
+
+Implementations MUST reconstruct the hash input corresponding to each archive timestamp according to the method defined in this specification and verify that it matches the messageImprint contained in the TimeStampToken.
+
+For validation of each archive timestamp, the time of the corresponding enclosing archive timestamp MUST be used as the validation reference time. If no enclosing archive timestamp exists, the current time MUST be used as the validation reference time.
+
+Archive timestamp validation may be performed from outermost to innermost, or from innermost to outermost, depending on implementation or validation policy. However, implementations SHOULD apply validation processing consistently.
+
+If recursive archive validation fails, the long-term validation state protected by the corresponding archive timestamp MUST be treated as untrusted.
+
+Implementations and operational environments SHOULD avoid excessive nesting of recursive archive structures.
+
 ## Cryptographic Algorithm Agility
-## Chained Signing Considerations
+
+LTV-JWS adopts a long-term signature approach that assumes cryptographic algorithm migration in order to address cryptographic algorithm obsolescence, weakening, or compromise.
+
+Cryptographic algorithms used for signatures, timestamps, certificate validation, and external reference hashes may lose security over time.
+
+Implementations and operational environments MUST migrate to cryptographic algorithms providing sufficient security according to the applicable security policy.
+
+By continuously adding archive timestamps, past signatures, timestamps, validation information, and archive information can continue to be protected using newer cryptographic algorithms.
+
+For external references, before the currently used hash algorithm becomes weak or compromised, overlapping assurance using both old and new hash algorithms can be maintained by adding "rehashes".
+
+In the long-term signature approach, even cryptographic algorithms that are currently considered weak or deprecated may still be considered valid if the corresponding signatures, timestamps, or hash values were generated at a time when those algorithms were considered sufficiently secure.
+
+Therefore, implementations and operational environments MUST appropriately manage the validity period, security evaluation, and applicable usage period of each cryptographic algorithm.
+
+Implementations MUST appropriately identify weak or deprecated cryptographic algorithms and determine validation results according to the applicable validation policy.
+
+Failure of cryptographic algorithm migration, inappropriate algorithm selection, or insufficient archive timestamp renewal may result in loss of long-term signature validity.
+
 ## Canonicalization and Deterministic Inputs
+
+LTV-JWS achieves deterministic signature inputs and hash inputs without using JSON canonicalization by reusing the JWS signing input model defined in RFC 7515.
+
+JWS signature inputs, signature timestamp hash inputs, and archive timestamp hash inputs are constructed by concatenating BASE64URL-encoded values using the "." character.
+
+For external references, the external reference hash input uses the externally referenced binary data itself as the hash input by default. If `type=jws` is used, the same BASE64URL concatenation model as the JWS signing input model is used.
+
+This approach avoids differences caused by JSON serialization order, whitespace, indentation, or other variations in JSON textual representation.
+
+Even in recursive archive structures, hash inputs are deterministically reconstructed without requiring JSON canonicalization because the hash inputs are constructed as ordered concatenations of BASE64URL-encoded values.
+
+Implementations MUST reconstruct signature inputs and hash inputs according to the exact input construction methods defined in this specification.
+
+Incorrect JSON re-serialization, misuse of JSON canonicalization, incorrect BASE64URL processing, or incorrect input construction ordering may result in signature validation failure, timestamp validation failure, or long-term validation failure.
+
+In particular, archive timestamp validation requires exact reconstruction of hash inputs including prior archive structures, and incorrect input reconstruction may cause failure of the entire long-term signature validation.
+
 ## Local Signing Time Considerations
-## Validation Information Freshness
+
+The "signingTime" parameter in LTV-JWS represents the local system time used at the time of signing.
+
+The "signingTime" value is informational and does not by itself provide cryptographically protected proof of signing time.
+
+Trusted signing time is generally established using trusted timestamp mechanisms such as RFC 3161 timestamps.
+
+Implementations MUST NOT treat "signingTime" as trusted signing time. However, this restriction does not apply if the applicable validation policy permits the use of trusted local system time.
+
+The "signingTime" value may contain incorrect values due to system clock manipulation, timezone misconfiguration, incorrect local time configuration, or malicious signers.
+
+If the "signingTime" value significantly differs from the trusted timestamp time, the validation policy should treat the difference as a suspicious time discrepancy warning.
+
+For long-term validation, validation reference times should generally be based on trusted timestamps.
+
+## Validation Information Applicability
+
+For long-term validation in LTV-JWS, appropriate validation information MUST be used for the applicable validation reference time.
+
+Certificates, CRLs, OCSP responses, TimeStampTokens, and other validation information should be valid and applicable at the corresponding validation reference time.
+
+Implementations MUST appropriately validate certificate validity periods, CRL issuance times, nextUpdate values, OCSP response validity, timestamp times, and other validation-related time information.
+
+Use of inappropriate validation information for a given validation reference time may result in incorrect revocation status determination or incorrect validation results.
+
+In the long-term signature approach, validation information itself also needs to be continuously protected by archive timestamps.
+
+Missing, corrupted, or inapplicable validation information for a given validation reference time may cause long-term validation results to become Indeterminate.
+
+Implementations and operational environments should appropriately preserve validation information required for long-term validation and continue adding archive timestamps appropriately.
 
 # IANA Considerations
 
 ## Registration of the "ltv" JOSE Header Parameter
+
+This specification defines the "ltv" JOSE Header Parameter for use in JWS Protected Headers and Unprotected Headers.
+
+The "ltv" parameter is used to store long-term validation related information including signature extension information, timestamps, validation information, and archive information.
+
+This specification requests registration of the "ltv" parameter in the "JSON Web Signature and Encryption Header Parameters" registry.
+
+The registration is as follows:
+
+- Header Parameter Name: "ltv"
+- Header Parameter Description: Long-Term Validation information for JWS
+- Header Parameter Usage Location(s): JWS
+- Change Controller: IETF
+- Specification Document(s): This specification
+
 ## LTV-JWS External Reference Type Registry
+
+This specification defines an external reference "type" identifier registry.
+
+This registry is used to identify external reference hash input construction methods and external reference signing models.
+
+This specification defines the following initial values:
+
+- "raw": uses externally referenced binary data directly as the hash input
+- "jws": uses the same BASE64URL concatenation model as the JWS signing input model for externally referenced JWS objects
+
+Additional external reference type identifiers may be defined by future specifications or IANA registrations.
+
 ## LTV-JWS Timestamp Type Registry
+
+This specification defines a timestamp "type" identifier registry.
+
+This registry is used to identify the timestamp format contained in timestamp objects.
+
+This specification defines the following initial value:
+
+- "rfc3161": RFC 3161 TimeStampToken
+
+Additional timestamp type identifiers may be defined by future specifications or IANA registrations.
+
 ## Hash Algorithm Identifiers
+
+This specification defines "S256", "S384", and "S512" as hash algorithm identifiers.
+
+These are shorthand identifiers representing SHA-256, SHA-384, and SHA-512 respectively.
+
+Additional hash algorithm identifiers may be defined by future specifications or IANA registrations.
+
 ## No New Cryptographic Algorithms
+
+This specification does not define new signature algorithms, hash algorithms, timestamp algorithms, or cryptographic primitives.
+
+LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RFC 7518, RFC 3161, and existing PKIX/CMS related specifications.
+
 
 # References
 
 ## Normative References
 
-- RFC 7515
-- RFC 7518
-- RFC 2119
-- RFC 3161
-- RFC 5280
+- RFC 7515 - JSON Web Signature (JWS)
+- RFC 7518 - JSON Web Algorithms (JWA)
+- RFC 3161 - Internet X.509 Public Key Infrastructure Time-Stamp Protocol (TSP)
+- RFC 5280 - Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
+- RFC 6960 - X.509 Internet Public Key Infrastructure Online Certificate Status Protocol (OCSP)
+- RFC 3339 - Date and Time on the Internet: Timestamps
+- RFC 2119 - Key words for use in RFCs to Indicate Requirement Levels
+- RFC 8174 - Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words
 
 ## Informative References
 
-TBD
+- RFC 4998 - Evidence Record Syntax (ERS)
+- RFC 6283 - Extensible Markup Language Evidence Record Syntax (XMLERS)
+- RFC 8785 - JSON Canonicalization Scheme (JCS)
+- ISO 14533-2 - Processes, data elements and documents in commerce, industry and administration - Long term signature profiles - Part 2: Profiles for XML Advanced Electronic Signatures (XAdES)
 
 # Appendix: LTV-JWS Example
 
