@@ -206,6 +206,14 @@ LTV-JWS stores long-term validation related information as "ltv" objects distrib
 
 This structure enables long-term validation information to be incrementally added without modifying the original signature value.
 
+LTV-JWS supports both Flattened JWS JSON Serialization and General JWS JSON Serialization defined in RFC 7515.
+
+If the payload contains the "ltv.refs" array, all signatures associated with the same payload MUST be processed as LTV-JWS signatures.
+
+In such cases, all corresponding protected headers MUST contain the "ltv" Header Parameter and MUST include "ltv" in the "crit" Header Parameter.
+
+This requirement prevents inconsistent interpretation of external reference semantics among signatures sharing the same payload.
+
 ## Protected Header
 
 In LTV-JWS, the protected header MUST contain the following elements:
@@ -239,6 +247,14 @@ LTV-JWS supports the following payload models:
    The payload contains a JSON object including "ltv.refs" used for indirect signing of external data.
 
 Detached payloads as defined in RFC 7515 are allowed but NOT RECOMMENDED for LTV-JWS, since long-term validation benefits from preserving payload or external reference information together with the signature.
+
+If detached payloads are used, implementations and operational environments SHOULD ensure long-term availability and consistent preservation of the detached payload data associated with the signature.
+
+Loss, modification, or ambiguity of detached payload data may result in failure of signature validation, timestamp validation, archive validation, or long-term validation.
+
+If the payload contains the "ltv.refs" array, the payload itself still participates in JWS signature input construction.
+
+Externally referenced data identified by "ltv.refs" is validated separately through external reference hash validation.
 
 ## Signature
 
@@ -884,6 +900,22 @@ Implementations MUST carefully validate all cryptographic inputs, timestamp and 
 
 Improper validation processing, incorrect handling of unprotected header information, or incorrect interpretation of BASE64URL and BASE64 encoded values may result in incorrect validation results or loss of long-term signature validity.
 
+## JSON Object Processing
+
+Implementations MUST reject JSON objects containing duplicate member names.
+
+This requirement applies to all JSON objects defined in this specification, including:
+
+- protected headers
+- unprotected headers
+- payload "ltv" objects
+- "validations" objects
+- "timestamp" objects
+- "archive" objects
+- "rehashes" objects
+
+Duplicate member names may cause inconsistent interpretation between implementations and may result in incorrect signature validation, timestamp validation, archive validation, or external reference validation.
+
 ## Trust Model of Unprotected Header Information
 
 LTV-JWS stores timestamps, validation information, and archive-related information in the unprotected header.
@@ -897,6 +929,14 @@ In addition, unprotected header information is subject to long-term integrity pr
 Implementations MUST NOT treat unprotected header information as trusted solely because such information is present in the JWS object.
 
 If archive timestamp validation fails, the associated unprotected header information MUST be treated as untrusted.
+
+## Detached Payload Considerations
+
+Detached payload usage may complicate long-term preservation and validation because the payload data required for JWS signature validation is stored outside the JWS object.
+
+Implementations and operational environments SHOULD ensure long-term preservation, availability, and integrity of detached payload data associated with LTV-JWS objects.
+
+Loss or ambiguity of detached payload data may result in failure of signature validation, timestamp validation, archive validation, or long-term validation.
 
 ## Validation Requirements for External References
 
@@ -915,6 +955,27 @@ This restriction simplifies external reference validation processing and prevent
 Implementations SHOULD carefully consider the trust model, retrieval method, and persistence of externally referenced data.
 
 The security and availability of externally referenced data are outside the scope of this specification.
+
+## External Reference Retrieval Security
+
+Implementations SHOULD carefully control retrieval of externally referenced data identified by "uri" parameters.
+
+Retrieval of external references may introduce security and operational risks including:
+
+- Server-Side Request Forgery (SSRF)
+- unintended access to internal network resources
+- loopback or local file access
+- retrieval of mutable or replaced content
+- excessive resource consumption
+- denial-of-service conditions
+- retrieval timeouts
+- unexpected URI scheme handling
+
+Implementations SHOULD restrict permitted URI schemes, network locations, retrieval methods, object sizes, and timeout behavior according to the applicable security policy.
+
+Implementations SHOULD NOT automatically trust externally retrieved data solely because the corresponding hash value matches.
+
+The security, trustworthiness, persistence, availability, and retrieval policy of externally referenced data are outside the scope of this specification.
 
 ## Signature Timestamp and Archive Timestamp Validation
 
@@ -1052,48 +1113,69 @@ Missing, corrupted, or inapplicable validation information for a given validatio
 
 Implementations and operational environments should appropriately preserve validation information required for long-term validation and continue adding archive timestamps appropriately.
 
+
 # IANA Considerations
+
+This document requests the registration of the "ltv" JOSE Header Parameter in the JSON Web Signature and Encryption Header Parameters Registry defined by RFC 7515.
+
+This specification uses the "ltv" object within the JWS Protected Header, JWS Unprotected Header, and the payload.
+
+The "ltv" object used in the Protected Header and Unprotected Header is treated as a JOSE Header Parameter and is subject to IANA registration.
+
+The "ltv" object used within the payload is a payload structure used to contain external references ("refs") and is not subject to the JOSE Header Parameter Registry.
+
+This specification defines additional Long-Term Validation related parameters and extension attributes managed within the "ltv" object.
+
+Additional LTV-related parameters may be defined by this specification or future extension specifications.
 
 ## Registration of the "ltv" JOSE Header Parameter
 
 This specification defines the "ltv" JOSE Header Parameter for use in JWS Protected Headers and Unprotected Headers.
 
-The "ltv" parameter is used to store long-term validation related information including signature extension information, timestamps, validation information, and archive information.
+This specification also uses an "ltv" object within the payload for external reference ("refs") structures.
+
+The "ltv" Header Parameter contains long-term validation related information including signature extension information, timestamps, validation information, and archive information.
 
 This specification requests registration of the "ltv" parameter in the "JSON Web Signature and Encryption Header Parameters" registry.
 
 The registration is as follows:
 
 - Header Parameter Name: "ltv"
-- Header Parameter Description: Long-Term Validation information for JWS
-- Header Parameter Usage Location(s): JWS
+- Header Parameter Description: Long-Term Validation information container for JWS
+- Header Parameter Usage Location(s):
+  JWS Protected Header,
+  JWS Unprotected Header
 - Change Controller: IETF
 - Specification Document(s): This specification
 
-## LTV-JWS External Reference Type Registry
+The "ltv" Header Parameter MAY be included in the "crit" Header Parameter defined in RFC 7515.
 
-This specification defines an external reference "type" identifier registry.
+Implementations that do not understand the "ltv" Header Parameter and encounter "ltv" in "crit" MUST reject the JWS.
 
-This registry is used to identify external reference hash input construction methods and external reference signing models.
+## LTV-JWS External Reference Type Identifiers
+
+This specification defines external reference "type" identifiers used by LTV-JWS.
+
+These identifiers are used to identify external reference hash input construction methods and external reference signing models.
 
 This specification defines the following initial values:
 
 - "raw": uses externally referenced binary data directly as the hash input
 - "jws": uses the same BASE64URL concatenation model as the JWS signing input model for externally referenced JWS objects
 
-Additional external reference type identifiers may be defined by future specifications or IANA registrations.
+Additional external reference type identifiers may be defined by future specifications.
 
-## LTV-JWS Timestamp Type Registry
+## LTV-JWS Timestamp Type Identifiers
 
-This specification defines a timestamp "type" identifier registry.
+This specification defines timestamp "type" identifier used by LTV-JWS.
 
-This registry is used to identify the timestamp format contained in timestamp objects.
+These identifiers are used to identify the timestamp format contained in timestamp objects.
 
 This specification defines the following initial value:
 
 - "rfc3161": RFC 3161 TimeStampToken
 
-Additional timestamp type identifiers may be defined by future specifications or IANA registrations.
+Additional timestamp type identifiers may be defined by future specifications.
 
 ## Hash Algorithm Identifiers
 
@@ -1101,7 +1183,7 @@ This specification defines "S256", "S384", and "S512" as hash algorithm identifi
 
 These are shorthand identifiers representing SHA-256, SHA-384, and SHA-512 respectively.
 
-Additional hash algorithm identifiers may be defined by future specifications or IANA registrations.
+Additional hash algorithm identifiers may be defined by future specifications.
 
 ## No New Cryptographic Algorithms
 
