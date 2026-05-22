@@ -514,7 +514,7 @@ This specification defines the following "type" identifiers.
 
 # Creation Processing
 
-### Signature Input and Timestamp Hash Inputs
+## Signature Input and Timestamp Hash Inputs
 
 LTV-JWS constructs signature inputs and timestamp hash inputs by concatenating BASE64URL-encoded values using the "." character.
 
@@ -563,6 +563,8 @@ The following table shows the corresponding signature and timestamp hash inputs.
 | SIG-T | Signature Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC"` |
 | SIG-LTA(1) | 1st Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE"` |
 | SIG-LTA(2) | 2nd Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE.FFFFFF.GGGGGG"` |
+
+The resulting concatenated string is hashed and used as the RFC 3161 messageImprint value.
 
 The strings above represent the exact concatenated BASE64URL-encoded values used as signature input or timestamp hash inputs.
 
