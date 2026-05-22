@@ -504,23 +504,71 @@ This specification defines the following "type" identifiers.
 
   Chained signing can be used for constructing ordered signature chains of multiple JWS objects, additional signatures, or multi-stage signing processes.
 
-# Processing
 
-## Validation Reference Time
 
-The validation reference time depends on the validation target.
 
-For SIG-B signature validation, if a valid signature timestamp exists, the signature timestamp time MUST be used as the validation reference time. If no valid signature timestamp exists, the current time MUST be used as the validation reference time, unless another trusted signing time is permitted by the applicable validation policy.
 
-For validation of each "validations" object, if a corresponding archive timestamp protecting that validation information exists, the archive timestamp time MUST be used as the validation reference time. If no corresponding archive timestamp exists, the current time MUST be used as the validation reference time.
 
-For archive timestamp validation, the applicable validation reference time depends on the archive generation being validated and the applicable validation policy.
 
-The exact determination of trusted timestamps and validation reference times depends on the applicable validation policy.
 
-## SIG-B (Signature Base level)
 
-SIG-B is the base signature level in LTV-JWS.
+# Creation Processing
+
+### Signature Input and Timestamp Hash Inputs
+
+LTV-JWS constructs signature inputs and timestamp hash inputs by concatenating BASE64URL-encoded values using the "." character.
+
+The following simplified LTV-JWS structure illustrates how signature inputs and timestamp hash inputs are constructed across each signature level.
+
+The values "AAAAAA" and similar values represent BASE64URL-encoded element values.
+
+~~~json
+{
+  "payload": "AAAAAA",
+  "protected": "BBBBBB",
+  "signature": "CCCCCC",
+  "header":
+  {
+    "ltv":
+    {
+      "timestamp": "DDDDDD",
+      "signing": "EEEEEE",
+      "archive":
+      {
+        "timestamp": "FFFFFF",
+        "archive":
+        {
+          "rehashes": "GGGGGG",
+          "timestamp": "HHHHHH"
+        }
+      }
+    }
+  }
+}
+~~~
+
+Where:
+
+* "DDDDDD" is the signature timestamp with validations
+* "EEEEEE" contains validations for the signing certificate
+* "FFFFFF" is the 1st archive timestamp with validations
+* "GGGGGG" contains renewal hashes for refs
+* "HHHHHH" is the 2nd archive timestamp
+
+The following table shows the corresponding signature and timestamp hash inputs.
+
+| Signature Level | Processing | Input Construction |
+|---|---|---|
+| SIG-B | Signature (JWS) | Signature over `"BBBBBB.AAAAAA"` |
+| SIG-T | Signature Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC"` |
+| SIG-LTA(1) | 1st Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE"` |
+| SIG-LTA(2) | 2nd Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE.FFFFFF.GGGGGG"` |
+
+The strings above represent the exact concatenated BASE64URL-encoded values used as signature input or timestamp hash inputs.
+
+## SIG-B (Signature Base level) Creation Processing
+
+SIG-BはLTV-JWSの最初のステップであり、JWS拡張の署名のみのレベルである。
 
 SIG-B binds signed target data and the signing certificate using a JWS signature and a signing certificate hash.
 
@@ -528,9 +576,7 @@ SIG-B can be used both as a normal JWS signature and as an indirect signing mode
 
 External references are OPTIONAL. If no external references exist, SIG-B is processed as a normal JWS signature.
 
-Generation and validation of SIG-B use the JWS JSON Serialization processing model defined in RFC 7515.
-
-### External Reference Hash Construction
+### Payload External References (ltv.refs) Creation
 
 When external references are used, hash values for each "refs" element MUST be generated.
 
@@ -561,7 +607,9 @@ This hash input construction method uses the same concept as the JWS Signing Inp
 
 The hash value MUST be calculated using the algorithm specified by the corresponding "hashAlg" parameter.
 
-### Signature Input Construction
+### Protected Header ltv Object Creation
+
+### Signature Creation
 
 The signature input of LTV-JWS MUST be constructed using the same method as the JWS Signing Input defined in RFC 7515.
 
@@ -573,12 +621,6 @@ BASE64URL(payload)
 ```
 Figure 5: JWS Signature (SIG-B) Input Construction
 
-The "ltv" object in the protected header is included in the signature input.
-
-The "ltv" object in the unprotected header is not included in the signature input.
-
-### Signature Generation
-
 During signature generation, implementations MUST use the JWS JSON Serialization signature generation process defined in RFC 7515.
 
 The protected header "ltv" object MUST contain at least the "signingCertHash" object.
@@ -587,35 +629,9 @@ If the payload contains the "ltv.refs" array, all external reference hash values
 
 The generated signature value is stored in the "signature" element.
 
-### Signature Validation
+## SIG-T (Signature Timestamp level) Creation Processing
 
-During signature validation, implementations MUST reconstruct the signature input according to RFC 7515 and perform signature validation.
-
-The protected header "ltv" object is protected by the signature and therefore can be trusted during validation.
-
-Implementations MUST validate the "signingCertHash" object against the signing certificate used for signature validation.
-
-The hash value calculated from the signing certificate MUST match the "hashValue" parameter contained in the "signingCertHash" object.
-
-If the payload contains the "ltv.refs" array, hash validation for all external references MUST be performed.
-
-Hash values MUST be recalculated using the hash input construction method defined for the corresponding "type" parameter, and MUST match the corresponding "hashValue" parameter.
-
-Implementations MUST perform applicable PKIX certification path validation for the signing certificate.
-
-If no trusted outer timestamp or archive timestamp exists, and if the protected header contains a trusted "signingTime" value permitted by the applicable validation policy, the "signingTime" value MAY be used as the validation reference time.
-
-The exact validation policy depends on the application or operational policy.
-
-If the signature value or external reference hash value does not match, the SIG-B validation result MUST be treated as Invalid.
-
-If required validation information for PKIX certification path validation is insufficient, the SIG-B validation result MAY be treated as Indeterminate.
-
-The exact determination criteria for validation results depend on the application or operational policy.
-
-## SIG-T (Signature Timestamp level)
-
-SIG-T is a signature level extending SIG-B by adding a signature timestamp.
+SIG-TはSIG-Bに署名タイムスタンプを追加するレベルである。
 
 SIG-T provides trusted proof that the signature existed prior to a specific point in time.
 
@@ -623,7 +639,7 @@ SIG-T is used to prove that the signature existed before expiration or revocatio
 
 The SIG-T signature timestamp is generated over a hash input constructed from the JWS "protected", "payload", and "signature".
 
-### Signature Timestamp Input Construction
+### Signature Timestamp Embedding
 
 The hash input for the signature timestamp MUST be constructed using the JWS "protected", "payload", and "signature".
 
@@ -638,8 +654,6 @@ Figure 6: Signature Timestamp Input Construction
 
 This hash input construction method extends the JWS Signing Input construction model defined in RFC 7515 by additionally including the signature value.
 
-### Signature Timestamp Generation
-
 During signature timestamp generation, implementations MUST generate the timestamp request using the hash input defined in the "Signature Timestamp Input Construction" section.
 
 If RFC 3161 timestamps are used, the messageImprint of the timestamp request MUST use the hash value calculated from the signature timestamp hash input.
@@ -648,43 +662,15 @@ The generated RFC 3161 TimeStampToken is stored in the "ltv.timestamp.tst" param
 
 If the "type" parameter of the timestamp is omitted, the default value is treated as "rfc3161".
 
-### Signature Timestamp Validation
+## SIG-LTV (Signature Long-Term Validation level) Creation Processing
 
-During signature timestamp validation, implementations MUST reconstruct the signature timestamp hash input using the method defined in the "Signature Timestamp Input Construction" section.
-
-If RFC 3161 timestamps are used, the messageImprint of the TimeStampToken MUST match the recalculated hash value.
-
-Implementations MUST perform signature validation of the RFC 3161 TimeStampToken.
-
-Implementations MUST perform applicable PKIX certification path validation for the TSA certificate.
-
-PKIX validation of the SIG-B signing certificate MUST be performed using the signature timestamp time as the validation reference time.
-
-This allows verification that the signature existed before expiration or revocation of the signing certificate.
-
-The exact validation policy depends on the application or operational policy.
-
-If the signature timestamp hash value or TimeStampToken signature does not match, the SIG-T validation result MUST be treated as Invalid.
-
-If required validation information for PKIX validation of the signing certificate or TSA certificate is insufficient, the SIG-T validation result MAY be treated as Indeterminate.
-
-The exact determination criteria for validation results depend on the application or operational policy.
-
-## SIG-LTV (Signature Long-Term Validation level)
-
-SIG-LTV is a signature level that preserves validation information required for Long-Term Validation.
+SIG-LTVはSIG-TまたはSIG-LTAを検証して検証情報を追加するレベルである。
 
 SIG-LTV MAY be constructed after validation of SIG-T or SIG-LTA.
 
 SIG-LTV preserves validation information used for validation of signing certificates and all timestamp TSA certificates in order to enable Long-Term Validation of signatures in the future without depending on external validation services or network access.
 
-### Validation Information Embedding
-
-All validation information is represented as "validations" objects.
-
-A "validations" object contains certificates, CRLs, and OCSP responses required for PKIX validation of the associated certificate.
-
-#### from SIG-T
+#### from SIG-T Validation Information Embedding
 
 When constructing SIG-LTV from SIG-T, implementations MUST preserve the validation information actually used during SIG-T validation.
 
@@ -697,7 +683,7 @@ Validation information related to the signing certificate MUST be stored as a BA
 
 Validation information related to the signature timestamp TSA certificate MUST be stored in the "validations" object under the corresponding signature "timestamp" object.
 
-#### from SIG-LTA
+#### from SIG-LTA Validation Information Embedding
 
 When constructing SIG-LTV from SIG-LTA, implementations MUST preserve the validation information actually used during SIG-LTA validation.
 
@@ -707,25 +693,9 @@ The preserved validation information MUST include:
 
 Validation information related to the latest archive timestamp TSA certificate MUST be stored in the "validations" object under the corresponding archive timestamp object.
 
-### Validation Information Validation
+## SIG-LTA (Signature Long-Term Archive Timestamp level) Creation Processing
 
-During SIG-LTV validation, implementations MUST perform PKIX validation of the signing certificate and each timestamp TSA certificate using the preserved validation information.
-
-If validation can be completed using only the preserved validation information, implementations MAY perform validation without accessing external certificates, CRLs, OCSP responses, or other validation information.
-
-Implementations MAY additionally use external validation information if permitted by the applicable validation policy.
-
-If required validation information is insufficient, the SIG-LTV validation result MAY be treated as Indeterminate.
-
-If signature values, external reference hash values, or timestamp signatures are invalid, the SIG-LTV validation result MUST be treated as Invalid.
-
-If multiple archive timestamps exist, validation may be performed from outer archive timestamps toward inner archive timestamps, or from inner archive timestamps toward outer archive timestamps, depending on implementation or validation policy.
-
-For recursive archive validation, implementations SHOULD apply validation processing consistently according to the validation reference time rules defined in the "Validation Reference Time" section.
-
-## SIG-LTA (Signature Long-Term Archive Timestamp level)
-
-SIG-LTA is a signature level that continuously extends the long-term validity of signatures by incrementally adding archive timestamps to SIG-LTV.
+SIG-LTAはSIG-LTVにアーカイブタイムスタンプを追加するレベルである。
 
 When SIG-LTA is generated for the first time, the first "archive" object is added as `header.ltv.archive`.
 
@@ -733,9 +703,8 @@ If an "archive" object already exists, long-term validity is continuously preser
 
 A newly added "archive" object MAY contain "rehashes", which stores renewed hash values for external references ("refs").
 
-A newly added "archive" object also contains an archive timestamp "timestamp" used to protect all signatures, timestamps, validation information, and renewed hash information accumulated up to that point.
-
-### External Reference Hash Renewal (rehashes)
+A newly added "archive" object also contains an archive timestamp "timestamp" used to protect all signatures, 
+### External Reference Hash Renewal (archive.rehashes) Embedding
 
 "rehashes" stores renewed hash values for external references ("refs").
 
@@ -743,7 +712,7 @@ If the hash algorithm used for externally referenced data becomes obsolete or cr
 
 If "rehashes" is used, it MUST be added within the same "archive" object before generating the corresponding archive timestamp.
 
-### Archive Timestamp Input Construction
+### Archive Timestamp Embedding
 
 The hash input for archive timestamps consists of BASE64URL-encoded elements concatenated using the "." character.
 
@@ -809,82 +778,66 @@ BASE64URL(header.ltv.archive.archive.archive.rehashes)
 ```
 Figure 9: Third-Generation Archive Timestamp Input (rehashes included)
 
-### Example of Signature Input and Timestamp Hash Inputs
-
-The following example illustrates the signature input and
-timestamp hash input progression for each signature level.
-
-The values "AAAAAA" and similar values represent
-BASE64URL-encoded strings.
-
-Example LTV-JWS object:
-
-~~~json
-{
-  "payload": "AAAAAA",
-  "protected": "BBBBBB",
-  "signature": "CCCCCC",
-  "header":
-  {
-    "ltv":
-    {
-      "timestamp": "DDDDDD",
-      "signing": "EEEEEE",
-      "archive":
-      {
-        "timestamp": "FFFFFF",
-        "archive":
-        {
-          "rehashes": "GGGGGG",
-          "timestamp": "HHHHHH"
-        }
-      }
-    }
-  }
-}
-~~~
-
-Where:
-
-* "DDDDDD" is the signature timestamp with validations
-* "EEEEEE" contains validations for the signing certificate
-* "FFFFFF" is the 1st archive timestamp with validations
-* "GGGGGG" contains renewal hashes for refs
-* "HHHHHH" is the 2nd archive timestamp
-
-The following table shows the corresponding signature and
-timestamp hash inputs.
-
-| Signature Level | Input | Calculation Target |
-|---|---|---|
-| SIG-B | Signature | Signature over `"BBBBBB.AAAAAA"` |
-| SIG-T | Signature Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC"` |
-| SIG-LTA(1) | 1st Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE"` |
-| SIG-LTA(2) | 2nd Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE.FFFFFF.GGGGGG"` |
-
-The strings above represent the exact concatenated
-BASE64URL-encoded values used as signature input or
-timestamp hash input.
-
-### Archive Timestamp Generation
-
 An archive timestamp is generated by creating an RFC 3161 timestamp over the archive timestamp hash input.
 
 The generated timestamp is stored as the corresponding archive timestamp.
-
-### Archive Timestamp Validation
-
-Archive timestamp validation MUST perform SIG-B signature validation, SIG-T timestamp validation, and validation using `validations` before validating all generations of archive timestamps.
-
-For each archive timestamp, the corresponding archive timestamp hash input MUST be reconstructed and verified to match the `messageImprint` value contained in the timestamp token.
-
-If archive objects recursively exist, implementations MAY validate archive timestamps from outermost to innermost, or from innermost to outermost, depending on implementation or validation policy.
 
 ### Next-Generation Archive Extension
 
 To continuously preserve the long-term validity of signatures, the next "archive" object is added within the existing "archive" object.
 
 If necessary, new "rehashes" are added and a new archive timestamp is generated, thereby enabling continuous extension of long-term validity.
+
+# Validation Processing
+
+## Validation Reference Time
+
+LTV-JWS validation uses the validation reference time shown in the following table.
+
+| Signature Level | Validation Reference Time |
+|---|---|
+| SIG-B | Signature Timestamp, if present |
+| SIG-T / SIG-LTV / SIG-LTA | nearest protecting Archive Timestamp, if present |
+
+If no corresponding timestamp exists, the current time is used as the validation reference time.
+
+If SIG-B does not contain a valid Signature Timestamp and the applicable validation policy permits use of signingTime, signingTime MAY be used as the validation reference time.
+
+The determination of validation reference time and validation results depends on the applicable validation policy.
+
+## SIG-B (Signature Base level) Validation Processing
+### Signature Verification
+### Signing Certificate Validation
+### External Reference Verification
+
+## SIG-T (Signature Timestamp level) Validation Processing
+
+SIG-Tの検証時には、SIG-Bの検証もおこなう必要がある。
+
+### Signature Timestamp Verification
+### Signature Timestamp TSA Certificate Validation
+
+## SIG-LTV (Signature Long-Term Validation level) Validation Processing
+
+SIG-LTVの検証時には、SIG-BとSIG-Tとあれば全てのSIG-LTAを、オフライン検証できる必要がある。
+
+### Signing and All TSA Certificate Validation
+
+## SIG-LTA (Signature Long-Term Archive Timestamp level) Validation Processing
+
+SIG-LTAの検証時には、SIG-BとSIG-Tともし古いSIG-LTAがあれば全て検証をおこなう必要がある。
+
+### Archive Timestamp Verification
+### Archive Timestamp TSA Certificate Validation
+### External Reference Hash Renewal Verification (rehashes)
+
+
+
+
+
+
+
+
 
 # Security Considerations
 
