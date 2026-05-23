@@ -321,7 +321,7 @@ The "validations" object MUST contain the "certs" parameter.
 
 The "certs" parameter contains an array of BASE64-encoded DER X.509 certificates required to validate the target certificate.
 
-The array MUST contain the target certificate (signing certificate or TSA certificate), intermediate CA certificates, root certificates, and other certificates required for validation.
+The array MUST contain the target certificate (signing certificate or TSA certificate), certificates forming the certification path, and any additional certificates required for validation, such as certificates required for validation of OCSP responses or CRLs.
 
 #### "crls" Parameter
 
@@ -341,34 +341,34 @@ If OCSP responses are used during validation, implementations MUST preserve the 
 
 ### "signing" Parameter
 
-The "signing" parameter contains validation information required to validate the signing certificate used for the
-JWS signature.
+The value of the "signing" parameter is a BASE64URL-encoded JSON object containing validation information required to validate the signing certificate used for the JWS signature.
 
 The "signing" parameter is used to preserve PKIX validation information for the signing certificate.
 
-The value of the "signing" parameter is a BASE64URL-encoded JSON object containing a "validations" object.
+The decoded JSON object contained in the "signing" parameter contains a "validations" object.
 
 The "validations" object contained in the "signing" parameter uses the same structure as the "validations"
-object defined in ""validations" Object".
+object defined in "validations" Object.
 
 The "signing" parameter is added to the "ltv" object in the unprotected header.
 
 Because the "signing" parameter is stored in the unprotected header, it is not directly protected by the JWS signature.
 
-However, it is protected by subsequent archive timestamps.
+However, it can later be protected by archive timestamps.
 
 The outer JSON object of the "signing" parameter is BASE64URL-encoded because it participates in archive timestamp hash input construction.
 
 This avoids ambiguity caused by JSON reserialization and enables deterministic reconstruction of archive timestamp hash inputs without requiring JSON canonicalization.
+
 However, DER-encoded PKIX-related binary objects contained within the embedded "validations" object use BASE64 encoding.
 
-### "timestamp" Object
+### "timestamp" Parameter
 
-The "timestamp" object contains timestamp information used to prove the existence of signatures, validation information, or archive information at a specific point in time.
+The value of the "timestamp" parameter is a BASE64URL-encoded JSON object containing timestamp information used to prove the existence of signatures, validation information, or archive information at a specific point in time.
 
 Timestamps are used to prove that target data existed prior to a specific point in time and to preserve signature validity during long-term validation.
 
-The structure of the "timestamp" object depends on the value of the "type" parameter.
+The structure of the decoded JSON object contained in the "timestamp" parameter depends on the value of the "type" parameter.
 
 #### "type" Parameter
 
@@ -388,13 +388,13 @@ Additional timestamp type identifiers MAY be defined by future specifications or
 
 The "tst" parameter is OPTIONAL.
 
-If "type" is "rfc3161", the "timestamp" object MUST contain the "tst" parameter.
+If "type" is "rfc3161", the decoded JSON object contained in the "timestamp" parameter MUST contain the "tst" parameter.
 
 The "tst" parameter contains a BASE64-encoded RFC 3161 TimeStampToken.
 
 #### "validations" Object
 
-The "validations" object under the "timestamp" object contains validation information required to validate the TSA certificate associated with the timestamp.
+The "validations" object within the decoded JSON object contained in the "timestamp" parameter contains validation information required to validate the TSA certificate associated with the timestamp.
 
 The "validations" object uses the same structure defined in the "validations" object described above.
 
@@ -404,35 +404,33 @@ The "archive" object contains archive timestamp information and renewed hash inf
 
 The "archive" object is used to protect the entire validation state required for long-term validation and to enable the continuation and extension of signature validity even after cryptographic algorithm obsolescence or compromise.
 
-#### "timestamp" Object
+#### "timestamp" Parameter
 
-The "timestamp" object contains archive timestamp information associated with the "archive" object.
+The value of the "timestamp" parameter is a BASE64URL-encoded JSON object containing archive timestamp information associated with the "archive" object.
 
 Archive timestamps are used to protect the entire set of signatures, timestamps, and validation information accumulated up to that point.
 
 If a "rehashes" object exists within the same "archive" object, the "rehashes" object is protected by the corresponding archive timestamp.
 
-The "timestamp" object uses the same structure as the "timestamp" object defined in the "ltv Unprotected Header Object".
+The "timestamp" parameter uses the same structure as the "timestamp" parameter defined in the "ltv Unprotected Header Object".
 
 The exact archive timestamp hash input construction is described in the "Archive Timestamp Input Construction" section.
 
 #### "rehashes" Parameter (refs renew hashes)
 
-The "rehashes" parameter contains renewed hash information for external references ("refs").
+The value of the "rehashes" parameter is a BASE64URL-encoded JSON object containing renewed hash information for external references ("refs").
 
 The purpose of the "rehashes" parameter is to enable continued verification of externally referenced data after cryptographic algorithm updates.
 
-The value of the "rehashes" parameter is a BASE64URL-encoded JSON object containing an "ltv" object with a "refs" array.
+The decoded JSON object contained in the "rehashes" parameter contains an "ltv" object with a "refs" array.
 
-The "ltv.refs" array within the "rehashes" parameter MUST preserve the same external references and the same ordering as the payload "ltv.refs" array.
+The "ltv.refs" array within the decoded JSON object contained in the "rehashes" parameter MUST preserve the same external references and the same ordering as the payload "ltv.refs" array.
 
 Each element in the "ltv.refs" array MUST modify only the hash-renewal-related "hashAlg" and "hashValue" parameters.
 
 All other parameters MUST match the corresponding element in the payload "ltv.refs" array.
 
-The number of elements in the "ltv.refs" array within the "rehashes" parameter MUST match the number of elements in the payload "ltv.refs" array.
-
-The "ltv.refs" array within the "rehashes" parameter MUST NOT add, remove, reorder, or modify elements other than the "hashAlg" and "hashValue" parameters.
+The "ltv.refs" array within the decoded JSON object contained in the "rehashes" parameter MUST NOT add, remove, reorder, or modify elements other than the "hashAlg" and "hashValue" parameters.
 
 #### "archive" (recursive Object)
 
@@ -504,14 +502,6 @@ This specification defines the following "type" identifiers.
 
   Chained signing can be used for constructing ordered signature chains of multiple JWS objects, additional signatures, or multi-stage signing processes.
 
-
-
-
-
-
-
-
-
 # Creation Processing
 
 ## Signature Input and Timestamp Hash Inputs
@@ -546,6 +536,7 @@ The values "AAAAAA" and similar values represent BASE64URL-encoded element value
   }
 }
 ~~~
+Figure 4: Simplified LTV-JWS Structure
 
 Where:
 
@@ -561,8 +552,10 @@ The following table shows the corresponding signature and timestamp hash inputs.
 |---|---|---|
 | SIG-B | Signature (JWS) | Signature over `"BBBBBB.AAAAAA"` |
 | SIG-T | Signature Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC"` |
-| SIG-LTA(1) | 1st Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE"` |
-| SIG-LTA(2) | 2nd Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE.FFFFFF.GGGGGG"` |
+| SIG-LTA (1st) | 1st Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE"` |
+| SIG-LTA (2nd) | 2nd Archive Timestamp | Hash of `"BBBBBB.AAAAAA.CCCCCC.DDDDDD.EEEEEE.FFFFFF.GGGGGG"` |
+
+Table 1: Signature Input and Timestamp Hash Input Construction
 
 For timestamp generation, the resulting concatenated string is hashed
 and used as the RFC 3161 messageImprint value.
@@ -604,7 +597,7 @@ BASE64URL(protected) || "." ||
 BASE64URL(payload) || "." ||
 BASE64URL(signature)
 ```
-Figure 4: Chained Signing Hash Input Construction
+Figure 5: Chained Signing Hash Input Construction
 
 This hash input construction method uses the same concept as the JWS Signing Input construction model defined in RFC 7515.
 
@@ -632,7 +625,7 @@ The signature input is constructed by concatenating BASE64URL-encoded elements i
 BASE64URL(protected) || "." ||
 BASE64URL(payload)
 ```
-Figure 5: JWS Signature (SIG-B) Input Construction
+Figure 6: JWS Signature (SIG-B) Input Construction
 
 During signature generation, implementations MUST use the JWS JSON Serialization signature generation process defined in RFC 7515.
 
@@ -641,6 +634,16 @@ The protected header "ltv" object MUST contain at least the "signingCertHash" ob
 If the payload contains the "ltv.refs" array, all external reference hash values MUST be generated before signature generation.
 
 The generated signature value is stored in the "signature" element.
+
+Implementations SHOULD preserve the signing certificate when constructing SIG-B objects in order to simplify future validation processing and support offline validation and long-term preservation.
+
+The signing certificate or certificate chain MAY be preserved within the optional "header.ltv.signing" parameter or by using the existing JWS "x5c" header parameter defined in RFC 7515.
+
+When used in SIG-B, the optional "header.ltv.signing" parameter MAY contain only the signing certificate or certificate chain without additional revocation information such as CRLs or OCSP responses.
+
+If the "x5c" parameter is used, it MAY be included in either the protected or unprotected header according to RFC 7515.
+
+The "header.ltv.signing" parameter is stored in the unprotected header and therefore is not directly protected by the JWS signature. However, it can later be protected by archive timestamps.
 
 ## SIG-T (Signature Timestamp level) Creation Processing
 
@@ -663,7 +666,7 @@ BASE64URL(protected) || "." ||
 BASE64URL(payload) || "." ||
 BASE64URL(signature)
 ```
-Figure 6: Signature Timestamp Input Construction
+Figure 7: Signature Timestamp Input Construction
 
 This hash input construction method extends the JWS Signing Input construction model defined in RFC 7515 by additionally including the signature value.
 
@@ -671,7 +674,7 @@ During signature timestamp generation, implementations MUST generate the timesta
 
 If RFC 3161 timestamps are used, the messageImprint of the timestamp request MUST use the hash value calculated from the signature timestamp hash input.
 
-The generated RFC 3161 TimeStampToken is stored in the "ltv.timestamp.tst" parameter of the unprotected header.
+The generated RFC 3161 TimeStampToken is stored in the "tst" parameter within the decoded JSON object contained in "ltv.timestamp" in the unprotected header.
 
 If the "type" parameter of the timestamp is omitted, the default value is treated as "rfc3161".
 
@@ -694,7 +697,7 @@ The preserved validation information MUST include:
 
 Validation information related to the signing certificate MUST be stored as a BASE64URL-encoded "validations" object in the "ltv.signing" parameter of the unprotected header.
 
-Validation information related to the signature timestamp TSA certificate MUST be stored in the "validations" object under the corresponding signature "timestamp" object.
+Validation information related to the signature timestamp TSA certificate MUST be stored in the "validations" object within the decoded JSON object contained in the corresponding signature "timestamp" parameter.
 
 #### from SIG-LTA Validation Information Embedding
 
@@ -704,7 +707,7 @@ The preserved validation information MUST include:
 
 - Certificates, CRLs, and OCSP responses used for PKIX validation of the latest archive timestamp TSA certificate
 
-Validation information related to the latest archive timestamp TSA certificate MUST be stored in the "validations" object under the corresponding archive timestamp object.
+Validation information related to the latest archive timestamp TSA certificate MUST be stored in the "validations" object within the decoded JSON object contained in the corresponding archive "timestamp" parameter.
 
 ## SIG-LTA (Signature Long-Term Archive Timestamp level) Creation Processing
 
@@ -716,7 +719,7 @@ If an "archive" object already exists, long-term validity is continuously preser
 
 A newly added "archive" object MAY contain "rehashes", which stores renewed hash values for external references ("refs").
 
-A newly added "archive" object also contains an archive timestamp "timestamp" object used to protect information contained within the existing archive structure.
+A newly added "archive" object also contains an archive timestamp "timestamp" parameter used to protect information contained within the existing archive structure.
 
 ### Archive Timestamp Embedding
 
@@ -756,7 +759,7 @@ BASE64URL(signature) || "." ||
 BASE64URL(header.ltv.timestamp) || "." ||
 BASE64URL(header.ltv.signing)
 ```
-Figure 7: First-Generation Archive Timestamp Input
+Figure 8: First-Generation Archive Timestamp Input
 
 For example, the hash input for a second-generation archive timestamp is as follows.
 
@@ -768,7 +771,7 @@ BASE64URL(header.ltv.timestamp) || "." ||
 BASE64URL(header.ltv.signing) || "." ||
 BASE64URL(header.ltv.archive.timestamp)
 ```
-Figure 8: Second-Generation Archive Timestamp Input
+Figure 9: Second-Generation Archive Timestamp Input
 
 An archive timestamp is generated by creating an RFC 3161 timestamp over the archive timestamp hash input.
 
@@ -793,7 +796,7 @@ BASE64URL(header.ltv.signing) || "." ||
 BASE64URL(header.ltv.archive.timestamp) || "." ||
 BASE64URL(header.ltv.archive.archive.rehashes)
 ```
-Figure 9: Second-Generation Archive Timestamp Input (rehashes included)
+Figure 10: Second-Generation Archive Timestamp Input (rehashes included)
 
 ### Next-Generation Archive Extension
 
@@ -812,13 +815,15 @@ LTV-JWS validation uses the validation reference time shown in the following tab
 | SIG-B | Signature Timestamp, if present |
 | SIG-T / SIG-LTV / SIG-LTA | nearest protecting Archive Timestamp, if present |
 
+Table 2: Validation Reference Time
+
 If no corresponding timestamp exists, the current time is used as the validation reference time.
 
 If SIG-B does not contain a valid Signature Timestamp and the applicable validation policy permits use of signingTime, signingTime MAY be used as the validation reference time.
 
 The determination of validation reference time and validation results depends on the applicable validation policy.
 
-## SIG-B (Signature Base level) Validation Processing
+## SIG-B Validation Processing
 
 SIG-B is the base validation level that validates the JWS signature and the signing certificate.
 
@@ -828,14 +833,7 @@ The validation result of SIG-B is determined as Valid, Invalid, or Indeterminate
 
 ### Signature Verification
 
-JWS signature verification MUST be performed using the JWS Signature Input defined in RFC 7515.
-
-The signature input is constructed by concatenating the BASE64URL-encoded "protected" and "payload" values using the "." character.
-
-```text
-BASE64URL(protected) || "." ||
-BASE64URL(payload)
-```
+Implementations MUST perform JWS signature verification using the JWS Signature Input construction defined in RFC 7515.
 
 Implementations MUST verify the signature value using the signature algorithm specified by the JWS "alg" parameter.
 
@@ -859,31 +857,21 @@ For each external reference, implementations MUST calculate the hash value using
 
 If "type=raw", the entire binary data of the externally referenced data is used as the hash input.
 
-If "type=jws", the hash input is constructed using the "protected", "payload", and "signature" values of the externally referenced JWS concatenated using the "." character.
+If "type=jws", implementations MUST reconstruct the external reference hash input according to the chained signing hash input construction rules defined in the "Payload External References (ltv.refs) Creation" section.
 
-```text
-BASE64URL(protected) || "." ||
-BASE64URL(payload) || "." ||
-BASE64URL(signature)
-```
+Implementations MUST verify that the calculated hash value matches the corresponding "hashValue" parameter.
 
 If external reference hash validation fails, the validation result MUST be treated as Invalid.
 
-## SIG-T (Signature Timestamp level) Validation Processing
+## SIG-T Validation Processing
 
 During SIG-T validation, implementations MUST also validate SIG-B.
 
 ### Signature Timestamp Verification
 
-During signature timestamp verification, implementations MUST reconstruct the signature timestamp hash input and verify that it matches the messageImprint contained in the RFC 3161 TimeStampToken.
+During signature timestamp verification, implementations MUST reconstruct the signature timestamp hash input according to the signature timestamp input construction rules defined in the "Signature Timestamp Embedding" section.
 
-The signature timestamp hash input is constructed by concatenating the JWS "protected", "payload", and "signature" values using the "." character.
-
-```text
-BASE64URL(protected) || "." ||
-BASE64URL(payload) || "." ||
-BASE64URL(signature)
-```
+Implementations MUST verify that the reconstructed hash input matches the messageImprint contained in the RFC 3161 TimeStampToken.
 
 Implementations MUST verify the signature value of the RFC 3161 TimeStampToken.
 
@@ -895,11 +883,11 @@ Implementations MUST perform PKIX validation of the TSA certificate associated w
 
 During TSA certificate validation, implementations MUST validate the certificate validity period, revocation status, and certificate chain using the Validation Reference Time.
 
-If SIG-LTV or SIG-LTA exists, implementations MAY perform offline validation using validation information contained in the corresponding "timestamp.validations" object.
+If SIG-LTV or SIG-LTA exists, implementations MAY perform offline validation using validation information contained in the "validations" object within the decoded JSON object contained in the corresponding "timestamp" parameter.
 
 If required validation information is unavailable, the validation result MAY be treated as Indeterminate.
 
-## SIG-LTV (Signature Long-Term Validation level) Validation Processing
+## SIG-LTV Validation Processing
 
 SIG-LTV validation MUST enable offline validation of SIG-B, SIG-T, and all existing SIG-LTA levels.
 
@@ -907,25 +895,27 @@ SIG-LTV validation MUST enable offline validation of SIG-B, SIG-T, and all exist
 
 SIG-LTV validation performs PKIX validation of the signing certificate and all TSA certificates associated with signature timestamps and archive timestamps.
 
-Implementations SHOULD use validation information preserved in "ltv.signing" and all corresponding "timestamp.validations" objects.
+Implementations SHOULD use validation information preserved in "ltv.signing" and the "validations" objects within all corresponding decoded JSON objects contained in "timestamp" parameters.
 
 During validation of each certificate, implementations MUST validate the certificate validity period, revocation status, and certificate chain using the applicable Validation Reference Time.
 
-Validation information preserved in SIG-LTV MAY include certificates, CRLs, OCSP responses, trust anchors, and other validation-related information required for offline validation.
+Validation information preserved in SIG-LTV MAY include certificates, CRLs, OCSP responses, and other validation-related information required for offline validation. This may include certificates required for validation of OCSP responses or CRLs.
 
 If the required validation information is insufficient to complete validation, the validation result MAY be treated as Indeterminate.
 
 If any signing certificate or TSA certificate validation fails, the validation result MUST be treated as Invalid.
 
-## SIG-LTA (Signature Long-Term Archive Timestamp level) Validation Processing
+## SIG-LTA Validation Processing
 
 During SIG-LTA validation, implementations MUST validate SIG-B, SIG-T, and all existing SIG-LTA levels.
 
 ### Archive Timestamp Verification
 
-During archive timestamp verification, implementations MUST reconstruct the corresponding archive timestamp hash input and verify that it matches the messageImprint contained in the RFC 3161 TimeStampToken.
+During archive timestamp verification, implementations MUST reconstruct the corresponding archive timestamp hash input according to the archive timestamp input construction rules defined in the "Archive Timestamp Embedding" section.
 
-Implementations MUST reconstruct the hash input according to the archive timestamp input construction method defined in this specification, including recursive "archive" structures.
+Implementations MUST verify that the reconstructed hash input matches the messageImprint contained in the RFC 3161 TimeStampToken.
+
+This includes reconstruction of recursive "archive" structures and any applicable "rehashes" elements.
 
 Implementations MUST verify the signature value of the RFC 3161 TimeStampToken.
 
@@ -937,7 +927,7 @@ Implementations MUST perform PKIX validation of the TSA certificate associated w
 
 During TSA certificate validation, implementations MUST validate the certificate validity period, revocation status, and certificate chain using the Validation Reference Time.
 
-Implementations MAY perform offline validation using validation information preserved in the corresponding "timestamp.validations" object.
+Implementations MAY perform offline validation using validation information preserved in the "validations" object within the decoded JSON object contained in the corresponding "timestamp" parameter.
 
 If required validation information is unavailable, the validation result MAY be treated as Indeterminate.
 
@@ -977,9 +967,8 @@ This requirement applies to all JSON objects defined in this specification, incl
 - unprotected headers
 - payload "ltv" objects
 - "validations" objects
-- "timestamp" objects
 - "archive" objects
-- "rehashes" objects
+- decoded JSON objects contained in "signing", "timestamp", and "rehashes" parameters
 
 Duplicate member names may cause inconsistent interpretation between implementations and may result in incorrect signature validation, timestamp validation, archive validation, or external reference validation.
 
@@ -1064,7 +1053,7 @@ For long-term validation, implementations MUST perform timestamp and certificate
 
 The time of the signature timestamp MUST be used as the validation reference time for SIG-B signature validation.
 
-For validation of each validations object, the time of the closest archive timestamp protecting the corresponding validation information MUST be used as the validation reference time. If no corresponding archive timestamp exists, the current time MUST be used as the validation reference time.
+For validation of each validations object, the time of the nearest protecting archive timestamp for the corresponding validation information MUST be used as the validation reference time. If no corresponding archive timestamp exists, the current time MUST be used as the validation reference time.
 
 Improper timestamp validation or incorrect use of validation reference time may result in incorrect long-term validation results.
 
@@ -1102,7 +1091,7 @@ Each archive timestamp protects signatures, timestamps, validation information, 
 
 Implementations MUST reconstruct the hash input corresponding to each archive timestamp according to the method defined in this specification and verify that it matches the messageImprint contained in the TimeStampToken.
 
-For validation of each archive timestamp, the time of the corresponding enclosing archive timestamp MUST be used as the validation reference time. If no enclosing archive timestamp exists, the current time MUST be used as the validation reference time.
+For validation of each archive timestamp, the time of the corresponding nearest protecting archive timestamp MUST be used as the validation reference time. If no nearest protecting archive timestamp exists, the current time MUST be used as the validation reference time.
 
 Archive timestamp validation may be performed from outermost to innermost, or from innermost to outermost, depending on implementation or validation policy. However, implementations SHOULD apply validation processing consistently.
 
@@ -1179,7 +1168,6 @@ In the long-term signature approach, validation information itself also needs to
 Missing, corrupted, or inapplicable validation information for a given validation reference time may cause long-term validation results to become Indeterminate.
 
 Implementations and operational environments should appropriately preserve validation information required for long-term validation and continue adding archive timestamps appropriately.
-
 
 # IANA Considerations
 
@@ -1258,7 +1246,6 @@ This specification does not define new signature algorithms, hash algorithms, ti
 
 LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RFC 7518, RFC 3161, and existing PKIX/CMS related specifications.
 
-
 # References
 
 ## Normative References
@@ -1274,9 +1261,6 @@ LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RF
 
 ## Informative References
 
-- RFC 4998 - Evidence Record Syntax (ERS)
-- RFC 6283 - Extensible Markup Language Evidence Record Syntax (XMLERS)
-- RFC 8785 - JSON Canonicalization Scheme (JCS)
 - ISO 14533-2 - Processes, data elements and documents in commerce, industry and administration - Long term signature profiles - Part 2: Profiles for XML Advanced Electronic Signatures (XAdES)
 
 # Appendix: LTV-JWS Example
@@ -1306,11 +1290,12 @@ Some long BASE64URL and BASE64 values are shortened for readability.
   "signature": "SD1LmkNPQFotnNvmkdymyrMTWVb_NTYjnY_VZ8Od5GGroA0RH3acuHhqjH9Yw46BnDPfr5Fjb996QBU8NhMzvrrBT38BBCFzyTMlChq_EkaRXeZyb3Ag1AClAe0Wz1g41tpQxnzWGRR8v6ozymb6g-T17Z_3I0SZlMKbmPdHVY0uFwYsgRpntqxM9_mG1kSZjyvYfrk-ZufyPuwgj8_l08-mN1Us6Gp6csqJJ8-QTd5-JPdKAFnj14QfYuEeyQcx5ZZaizDlEQnXghstkEJJ-dUIhlx5Pl0waAQvSp5H65bx0PDmVASfHQUIoy_Y3z5zqrGHRpJqPgAxOh770CzaQtF_yjujHWeVNqpgdX36zPl4f18jKbGRgEggl5iszoNWu-IVAFMVBQdR7vwXfdbuetjttfYuqo5Yk3Gw2bv7T3YeV2_7_1yGwByc8SXcP3PkStpDqIz_SRJ6sQ9K0cvwR6araBXpbkRqCECfG8DFfwlZqyPwgXG10B8N-2ABbPro",
   "header": {
     "ltv": {
-      "signing": "eyJ2YWxpZGF0aW9ucyI6eyJjZXJ0cyI6WyJNSUlGaXpDQ0Ez...Il19fQ"
+      "signing": "eyJ2YWxpZGF0aW9ucyI6eyJjZXJ0cyI6WyJNSUlGaXpDQ0Ez..."
     }
   }
 }
 ```
+Figure 11: Example of SIG-B
 
 This example shows a SIG-B LTV-JWS object including optional signer validation information.
 
@@ -1334,6 +1319,7 @@ Decoded payload:
   }
 }
 ```
+Figure 12: Example of SIG-B Decoded payload
 
 Decoded protected header:
 
@@ -1350,6 +1336,7 @@ Decoded protected header:
   }
 }
 ```
+Figure 13: Example of SIG-B Decoded protected header
 
 Decoded BASE64URL value of `header.ltv.signing`:
 
@@ -1357,11 +1344,12 @@ Decoded BASE64URL value of `header.ltv.signing`:
 {
   "validations": {
     "certs": [
-      "MIIFizCCA3OgAwIBAgIDEAAXMA0GCSqGSIb3DQEBCwUAME4x...oz7Q=="
+      "MIIFizCCA3OgAwIBAgIDEAAXMA0GCSqGSIb3DQEBCwUAME4x..."
     ]
   }
 }
 ```
+Figure 14: Example of SIG-B value of `header.ltv.signing`
 
 The `header.ltv.signing` value itself is a BASE64URL-encoded JSON object.
 
@@ -1373,6 +1361,7 @@ The JWS Signing Input for this example is constructed as:
 BASE64URL(protected) || "." ||
 BASE64URL(payload)
 ```
+Figure 15: JWS Signature (SIG-B) Input Construction
 
 This example uses indirect signing through the `ltv.refs` array.
 
@@ -1382,6 +1371,33 @@ The externally referenced files identified by `ltv.refs` are:
 * `test2.json`
 
 The `hashValue` of each reference is calculated over the externally referenced binary data itself because the default external reference type is `raw`.
+
+### Example SIG-B with x5c
+
+This example shows a SIG-B LTV-JWS object using the existing JWS "x5c" header parameter instead of the optional `header.ltv.signing` parameter.
+
+The example demonstrates:
+
+* use of the existing JWS `x5c` header parameter
+* preservation of the signing certificate using `x5c`
+* compatibility with existing JWS processing models
+* indirect signing using `ltv.refs`
+
+The `x5c` parameter is stored directly in the JWS header according to RFC 7515.
+
+Some long BASE64URL and BASE64 values are shortened for readability.
+
+```json
+{
+  "payload": "(same as SIG-B example)",
+  "protected": "(same as SIG-B example)",
+  "signature": "(same as SIG-B example)",
+  "header": {
+    "x5c":["MIIFizCCA3OgAwIBAgIDEAAXMA0GCSqGSIb3DQEBCwUAME4x..."]
+  }
+}
+```
+Figure 16: Example of SIG-B using 'x5c'
 
 ## Example SIG-T (examples/sig-t.json)
 
@@ -1405,11 +1421,12 @@ Some long BASE64URL and BASE64 values are shortened for readability.
   "header": {
     "ltv": {
       "signing": "(same as SIG-B example)",
-      "timestamp": "eyJ0c3QiOiJNSUlQRVFZSktvWklodmNOQVFjQ29JSVBBakND...In0"
+      "timestamp": "eyJ0c3QiOiJNSUlQRVFZSktvWklodmNOQVFjQ29JSVBBakND..."
     }
   }
 }
 ```
+Figure 17: Example of SIG-T
 
 Decoded BASE64URL value of `header.ltv.timestamp`:
 
@@ -1418,6 +1435,7 @@ Decoded BASE64URL value of `header.ltv.timestamp`:
   "tst": "MIIPEQYJKoZIhvcNAQcCoIIPAjCCDv4CAQMxCzAJBgUrDgMCGgUAMIHU..."
 }
 ```
+Figure 18: Example of SIG-T Decoded value of `header.ltv.timestamp`
 
 The `tst` value contains a BASE64-encoded RFC 3161 TimeStampToken in DER format.
 
@@ -1428,12 +1446,13 @@ BASE64URL(protected) || "." ||
 BASE64URL(payload) || "." ||
 BASE64URL(signature)
 ```
+Figure 19: Signature Timestamp Input Construction
 
 The RFC 3161 `messageImprint` value is calculated from the hash value of the Signature Timestamp Input.
 
 If the `type` parameter is omitted, the timestamp type defaults to `"rfc3161"`.
 
-The `header.ltv.timestamp` object MAY additionally contain a `validations` object preserving validation information for the TSA certificate.
+The decoded BASE64URL value of `header.ltv.timestamp` MAY additionally contain a `validations` object preserving validation information for the TSA certificate.
 
 ## Example SIG-LTV (examples/sig-ltv.json)
 
@@ -1443,7 +1462,7 @@ The example demonstrates:
 
 * validation information embedding
 * `header.ltv.signing`
-* `header.ltv.timestamp.validations`
+* validations within the decoded BASE64URL value of `header.ltv.timestamp`
 * preservation of certificates and CRLs for long-term validation
 
 The `header.ltv.signing` and `header.ltv.timestamp` values are BASE64URL-encoded JSON objects.
@@ -1457,12 +1476,13 @@ Some long BASE64URL and BASE64 values are shortened for readability.
   "signature": "(same as SIG-T example)",
   "header": {
     "ltv": {
-      "signing": "eyJ2YWxpZGF0aW9ucyI6eyJjZXJ0cyI6WyJNSUlGMlRDQ0E4...Il0sImNybHMiOlsiTUlJQ3JEQ0JsVEFO...Il19fQ",
-      "timestamp": "eyJ0c3QiOiJNSUlQRVFZSktvWklodmNOQVFjQ29JSVBBakND...LCJ2YWxpZGF0aW9ucyI6eyJjZXJ0cyI6WyJNSUlGMlRDQ0E4...Il0sImNybHMiOlsiTUlJQ3JEQ0JsVEFO...Il19fQ"
+      "signing": "eyJ2YWxpZGF0aW9ucyI6eyJjZXJ0cyI6WyJNSUlGMlRDQ0E4...Il0sImNybHMiOlsiTUlJQ3JEQ0JsVEFO...",
+      "timestamp": "eyJ0c3QiOiJNSUlQRVFZSktvWklodmNOQVFjQ29JSVBBakND...LCJ2YWxpZGF0aW9ucyI6eyJjZXJ0cyI6WyJNSUlGMlRDQ0E4..."
     }
   }
 }
 ```
+Figure 20: Example of SIG-LTV
 
 Decoded BASE64URL value of `header.ltv.signing`:
 
@@ -1479,6 +1499,7 @@ Decoded BASE64URL value of `header.ltv.signing`:
   }
 }
 ```
+Figure 21: Example of SIG-LTV Decoded value of `header.ltv.signing`
 
 Decoded BASE64URL value of `header.ltv.timestamp`:
 
@@ -1496,10 +1517,11 @@ Decoded BASE64URL value of `header.ltv.timestamp`:
   }
 }
 ```
+Figure 22: Example of SIG-LTV Decoded value of `header.ltv.timestamp`
 
-The `header.ltv.signing.validations.certs` array contains the signing certificate and certificates required for PKIX validation of the signing certificate.
+The `validations.certs` array within the decoded BASE64URL value of `header.ltv.signing` contains the signing certificate and certificates required for PKIX validation of the signing certificate.
 
-The `header.ltv.timestamp.validations.certs` array contains the TSA certificate and certificates required for PKIX validation of the TSA certificate associated with the RFC 3161 timestamp.
+The `validations.certs` array within the decoded BASE64URL value of `header.ltv.timestamp` contains the TSA certificate and certificates required for PKIX validation of the TSA certificate associated with the RFC 3161 timestamp.
 
 The embedded certificate values use BASE64 encoding because they are DER-encoded ASN.1 certificate objects.
 
@@ -1507,7 +1529,7 @@ The embedded CRL values use BASE64 encoding because they are DER-encoded ASN.1 C
 
 The `tst` value contains a BASE64-encoded RFC 3161 TimeStampToken in DER format.
 
-Validation information preserved in SIG-LTV MAY include certificates, CRLs, OCSP responses, trust anchors, and other validation-related information required for Long-Term Validation.
+Validation information preserved in SIG-LTV MAY include certificates, CRLs, OCSP responses and other validation-related information required for Long-Term Validation.
 
 SIG-LTV validation can be performed using only the preserved validation information without requiring external validation services or network access.
 
@@ -1536,12 +1558,13 @@ Some long BASE64URL and BASE64 values are shortened for readability.
       "signing": "(same as SIG-LTV example)",
       "timestamp": "(same as SIG-LTV example)",
       "archive": {
-        "timestamp": "eyJ0c3QiOiJNSUlQRUFZSktvWklodmNOQVFjQ29JSVBBVEND...In0"
+        "timestamp": "eyJ0c3QiOiJNSUlQRUFZSktvWklodmNOQVFjQ29JSVBBVEND..."
       }
     }
   }
 }
 ```
+Figure 23: Example of SIG-LTA
 
 Decoded BASE64URL value of `header.ltv.archive.timestamp`:
 
@@ -1550,6 +1573,7 @@ Decoded BASE64URL value of `header.ltv.archive.timestamp`:
   "tst": "MIIPEAYJKoZIhvcNAQcCoIIPATCCDv0CAQMxCzAJBgUrDgMC..."
 }
 ```
+Figure 24: Example of SIG-LTA Decoded value of `header.ltv.archive.timestamp`
 
 The `tst` value contains a BASE64-encoded RFC 3161 TimeStampToken in DER format.
 
@@ -1562,6 +1586,7 @@ BASE64URL(signature) || "." ||
 BASE64URL(header.ltv.timestamp) || "." ||
 BASE64URL(header.ltv.signing)
 ```
+Figure 25: Archive Timestamp Input
 
 The RFC 3161 `messageImprint` value of the archive timestamp is calculated from the hash value of the Archive Timestamp Input.
 
@@ -1598,12 +1623,13 @@ Some long BASE64URL and BASE64 values are shortened for readability.
       "signing": "(same as SIG-LTV example)",
       "timestamp": "(same as SIG-LTV example)",
       "archive": {
-        "timestamp": "eyJ0c3QiOiJNSUlQRUFZSktvWklodmNOQVFjQ29JSVBBVEND...LCJ2YWxpZGF0aW9ucyI6eyJjZXJ0cyI6WyJNSUlGMlRDQ0E4...Il0sImNybHMiOlsiTUlJQ3JEQ0JsVEFO...Il19fQ"
+        "timestamp": "eyJ0c3QiOiJNSUlQRUFZSktvWklodmNOQVFjQ29JSVBBVEND..."
       }
     }
   }
 }
 ```
+Figure 26: Example of SIG-LTV 2nd
 
 Decoded BASE64URL value of `header.ltv.archive.timestamp`:
 
@@ -1621,6 +1647,7 @@ Decoded BASE64URL value of `header.ltv.archive.timestamp`:
   }
 }
 ```
+Figure 27: Example of SIG-LTV 2nd Decoded value of `header.ltv.archive.timestamp`
 
 The `header.ltv.archive.timestamp.validations.certs` array contains the archive TSA certificate and certificates required for PKIX validation of the archive TSA certificate associated with the RFC 3161 archive timestamp.
 
@@ -1668,15 +1695,16 @@ Some long BASE64URL and BASE64 values are shortened for readability.
   }
 }
 ```
+Figure 28: Example of SIG-LTA 2nd
 
-Decoded BASE64URL value of
-`header.ltv.archive.archive.timestamp`:
+Decoded BASE64URL value of `header.ltv.archive.archive.timestamp`:
 
 ```json
 {
   "tst": "MIIPEAYJKoZIhvcNAQcCoIIPATCCDv0CAQMxCzAJBgUrDgMC..."
 }
 ```
+Figure 29: Example of SIG-LTA 2nd Decoded value of `header.ltv.archive.archive.timestamp`
 
 The `tst` value contains a BASE64-encoded RFC 3161 TimeStampToken in DER format.
 
@@ -1698,6 +1726,7 @@ BASE64URL(header.ltv.timestamp) || "." ||
 BASE64URL(header.ltv.signing) || "." ||
 BASE64URL(header.ltv.archive.timestamp)
 ```
+Figure 30: 2nd Archive Timestamp Input
 
 Additional archive timestamps MAY be added recursively for long-term renewal protection.
 
@@ -1738,9 +1767,9 @@ Some long BASE64URL and BASE64 values are shortened for readability.
   }
 }
 ```
+Figure 31: Example of SIG-LTA refs renew hashes
 
-Decoded BASE64URL value of
-`header.ltv.archive.archive.rehashes`:
+Decoded BASE64URL value of `header.ltv.archive.archive.rehashes`:
 
 ```json
 {
@@ -1760,6 +1789,7 @@ Decoded BASE64URL value of
   }
 }
 ```
+Figure 32: Example of SIG-LTA refs renew hashes Decoded value of `header.ltv.archive.archive.rehashes`
 
 The renewed `ltv.refs` array preserves the same external references and the same ordering as the payload `ltv.refs` array.
 
@@ -1776,12 +1806,9 @@ BASE64URL(header.ltv.signing) || "." ||
 BASE64URL(header.ltv.archive.timestamp) || "." ||
 BASE64URL(header.ltv.archive.archive.rehashes)
 ```
+Figure 33: 2nd Archive Timestamp Input with rehashed
 
-The resulting archive timestamp is stored in:
-
-```text
-header.ltv.archive.archive.timestamp
-```
+The resulting archive timestamp is stored in `header.ltv.archive.archive.timestamp`.
 
 The generated archive timestamp protects:
 
@@ -1826,13 +1853,7 @@ Some long BASE64URL and BASE64 values are shortened for readability.
   }
 }
 ```
-
-The JWS Signing Input for this example is constructed as:
-
-```text
-BASE64URL(protected) || "." ||
-BASE64URL(payload)
-```
+Figure 34: Example of Chained Signing
 
 Decoded BASE64URL value of `payload`:
 
@@ -1855,6 +1876,7 @@ Decoded BASE64URL value of `payload`:
   }
 }
 ```
+Figure 35: Example of Chained Signing Decoded value of `payload`:
 
 The `test1.txt` reference is verified as raw external data.
 
@@ -1862,11 +1884,12 @@ The `sig-b.json` reference is verified as a JWS object.
 
 For `"type": "jws"`, the referenced hash input is constructed as:
 
-```text id="nbm5lx"
+```text
 BASE64URL(protected) || "." ||
 BASE64URL(payload) || "." ||
 BASE64URL(signature)
 ```
+Figure 36: Chained Signing Hash Input Construction
 
 The verifier computes the hash value of the referenced JWS signing input and compares it with the `hashValue` parameter.
 
