@@ -12,7 +12,7 @@ author:
 
 --- abstract
 
-This specification extends JSON Web Signature (JWS, RFC 7515) and defines LTV-JWS, a lightweight long-term signature format for Long-Term Validation (LTV).
+This specification extends JSON Web Signature (JWS, {{!RFC7515}}) and defines LTV-JWS, a lightweight long-term signature format for Long-Term Validation (LTV).
 
 LTV-JWS adds signature extension elements, timestamps, validation information (certificates, CRLs, and OCSP responses), and archive structures as minimal extensions, thereby enabling the validity of signatures to be verified over extended periods of time. In addition, archive timestamps enable continued validation even after the obsolescence or compromise of cryptographic algorithms.
 
@@ -26,11 +26,11 @@ This Internet-Draft is submitted in full conformance with the provisions of BCP 
 
 # Introduction
 
-JSON Web Signatures (JWS) [RFC7515], a JSON-based signature format, are widely used to ensure the authenticity of target data. When data and JWS objects are stored over long periods of time, issues arise such as the expiration of signing certificates and the obsolescence or compromise of cryptographic algorithms.
+JSON Web Signatures (JWS) {{!RFC7515}}, a JSON-based signature format, are widely used to ensure the authenticity of target data. When data and JWS objects are stored over long periods of time, issues arise such as the expiration of signing certificates and the obsolescence or compromise of cryptographic algorithms.
 
 As an approach to Long-Term Validation (LTV), this specification defines four signature levels: the base signature level (SIG-B), the signature timestamp level (SIG-T), the long-term validation signature level containing validation information (SIG-LTV), and the long-term archive timestamp signature level (SIG-LTA). Furthermore, the continued addition of validation information and archive timestamps enables continued verification of signature validity, even after the obsolescence or compromise of cryptographic algorithms.
 
-Long-Term Validation for JSON Web Signature (LTV-JWS) is a JWS extension specification that defines a long-term signature format based on JWS JSON Serialization and a long-term validation approach similar to XAdES (XML Advanced Electronic Signature) for XML signatures.
+Long-Term Validation for JSON Web Signature (LTV-JWS) is a JWS extension specification that defines a long-term signature format based on JWS JSON Serialization and a long-term validation approach similar to XAdES [ISO14533-2] for XML signatures.
 
 In addition, this specification supports an indirect signing model using external references (refs), allowing multiple arbitrary files, including non-JSON data, to be used as indirect signature targets. This indirect signing mechanism enables JWS to be used as a more general-purpose signature.
 
@@ -45,7 +45,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL",
 "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",
 "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this
 document are to be interpreted as described in BCP 14
-[RFC2119] [RFC8174] when, and only when, they appear in
+{{!RFC2119}} {{!RFC8174}} when, and only when, they appear in
 all capitals, as shown here.
 
 - **LTV (Long-Term Validation)**: a validation model that preserves the ability to verify the validity of a signature over extended periods of time by using timestamps, validation information, and renewable archive protection.
@@ -160,7 +160,7 @@ The goals of LTV-JWS are as follows:
 
 LTV-JWS is designed based on the following principles:
 
-- Preserve the core structure and processing model of JWS as defined in RFC 7515.
+- Preserve the core structure and processing model of JWS as defined in {{!RFC7515}}.
 - Minimize additional structures and processing requirements in order to enable lightweight implementation and interoperability.
 - LTV-JWS avoids JSON canonicalization by reusing deterministic BASE64URL-based JWS signing input and hash input construction models.
 - Separate integrity-protected information from incrementally added long-term validation information by using protected and unprotected header structures appropriately.
@@ -173,7 +173,7 @@ LTV-JWS is designed based on the following principles:
 
 ## Relationship to JWS
 
-LTV-JWS is an extension specification for JSON Web Signature (JWS) defined in RFC 7515.
+LTV-JWS is an extension specification for JSON Web Signature (JWS) defined in {{!RFC7515}}.
 
 The relationship between LTV-JWS and JWS is summarized as follows:
 
@@ -185,19 +185,19 @@ The relationship between LTV-JWS and JWS is summarized as follows:
 - Verification of indirect signatures requires both JWS signature validation and external reference hash validation.
 - LTV-JWS is designed to maintain compatibility with existing JWS processing and implementations whenever possible.
 
-BASE64 encoding is used for DER-encoded ASN.1 objects for compatibility with existing PKIX and RFC 7515 x5c processing models.
+BASE64 encoding is used for DER-encoded ASN.1 objects for compatibility with existing PKIX and {{!RFC7515}} x5c processing models.
 
 LTV-JWS uses both BASE64URL encoding and BASE64 encoding depending on the type of data being represented.
 
-Values participating in JWS signing input construction, hash input construction, external reference hash processing, and hash-based identifiers use BASE64URL encoding consistent with RFC 7515 JWS processing and JOSE thumbprint conventions.
+Values participating in JWS signing input construction, hash input construction, external reference hash processing, and hash-based identifiers use BASE64URL encoding consistent with {{!RFC7515}} JWS processing and JOSE thumbprint conventions.
 
-DER-encoded PKIX and CMS related binary objects, including certificates, CRLs, OCSP responses, and RFC 3161 TimeStampTokens, use BASE64 encoding consistent with the "x5c" header parameter defined in RFC 7515.
+DER-encoded PKIX and CMS related binary objects, including certificates, CRLs, OCSP responses, and {{!RFC3161}} TimeStampTokens, use BASE64 encoding consistent with the "x5c" header parameter defined in {{!RFC7515}}.
 
 # Data Model
 
 ## JWS Structure
 
-LTV-JWS is based on the JWS JSON Serialization defined in RFC 7515 and consists of protected headers, unprotected headers, payloads, and signatures.
+LTV-JWS is based on the JWS JSON Serialization defined in {{!RFC7515}} and consists of protected headers, unprotected headers, payloads, and signatures.
 
 LTV-JWS stores long-term validation related information as "ltv" objects distributed across these structures.
 
@@ -207,7 +207,7 @@ LTV-JWS stores long-term validation related information as "ltv" objects distrib
 
 This structure enables long-term validation information to be incrementally added without modifying the original signature value.
 
-LTV-JWS supports both Flattened JWS JSON Serialization and General JWS JSON Serialization defined in RFC 7515.
+LTV-JWS supports both Flattened JWS JSON Serialization and General JWS JSON Serialization defined in {{!RFC7515}}.
 
 If the payload contains the "ltv.refs" array, all signatures associated with the same payload MUST be processed as LTV-JWS signatures.
 
@@ -247,7 +247,7 @@ LTV-JWS supports the following payload models:
 2. Indirect signing model:
    The payload contains a JSON object including "ltv.refs" used for indirect signing of external data.
 
-Detached payloads as defined in RFC 7515 are allowed but NOT RECOMMENDED for LTV-JWS, since long-term validation benefits from preserving payload or external reference information together with the signature.
+Detached payloads as defined in {{!RFC7515}} are allowed but NOT RECOMMENDED for LTV-JWS, since long-term validation benefits from preserving payload or external reference information together with the signature.
 
 If detached payloads are used, implementations and operational environments SHOULD ensure long-term availability and consistent preservation of the detached payload data associated with the signature.
 
@@ -259,7 +259,7 @@ Externally referenced data identified by "ltv.refs" is validated separately thro
 
 ## Signature
 
-The signature contains the JWS signature value generated using the protected header and payload according to RFC 7515.
+The signature contains the JWS signature value generated using the protected header and payload according to {{!RFC7515}}.
 
 LTV-JWS does not define new signature algorithms and reuses existing JOSE signature algorithms.
 
@@ -273,7 +273,7 @@ The "ltv" object in the protected header contains integrity-protected informatio
 
 The "signingTime" parameter is OPTIONAL.
 
-The "signingTime" parameter represents the local signing time asserted by the signer. The value of "signingTime" MUST be represented as an RFC 3339 date-time string.
+The "signingTime" parameter represents the local signing time asserted by the signer. The value of "signingTime" MUST be represented as an {{!RFC3339}} date-time string.
 
 The "signingTime" parameter is informational and does not by itself provide cryptographically protected proof of signing time. Trusted proof of signing time is generally established using timestamp structures described in this specification. However, under a policy that permits the use of trusted system time, the "signingTime" value MAY be used as trusted signing time.
 
@@ -288,7 +288,7 @@ The "signingCertHash" object MUST contain both "hashAlg" and "hashValue" paramet
 - "hashAlg": the hash algorithm identifier
 - "hashValue": the hash value of the signing certificate
 
-The "signingCertHash" object is conceptually similar to the "x5t" and "x5t#S256" header parameters defined in RFC 7515, but provides algorithm agility and mandatory certificate binding semantics for long-term validation.
+The "signingCertHash" object is conceptually similar to the "x5t" and "x5t#S256" header parameters defined in {{!RFC7515}}, but provides algorithm agility and mandatory certificate binding semantics for long-term validation.
 
 Unlike standalone certificate thumbprint parameters, the "signingCertHash" object is part of the protected "ltv" object together with other signing-time related information such as "signingTime".
 
@@ -381,7 +381,7 @@ The default value of "type" is "rfc3161".
 
 This specification defines the following timestamp type identifier:
 
-- "rfc3161": RFC 3161 TimeStampToken
+- "rfc3161": {{!RFC3161}} TimeStampToken
 
 Additional timestamp type identifiers MAY be defined by future specifications or IANA registrations.
 
@@ -391,7 +391,7 @@ The "tst" parameter is OPTIONAL.
 
 If "type" is "rfc3161", the decoded JSON object contained in the "timestamp" parameter MUST contain the "tst" parameter.
 
-The "tst" parameter contains a BASE64-encoded RFC 3161 TimeStampToken.
+The "tst" parameter contains a BASE64-encoded {{!RFC3161}} TimeStampToken.
 
 #### "validations" Object
 
@@ -559,7 +559,7 @@ The following table shows the corresponding signature and timestamp hash inputs.
 Table 1: Signature Input and Timestamp Hash Input Construction
 
 For timestamp generation, the resulting concatenated string is hashed
-and used as the RFC 3161 messageImprint value.
+and used as the {{!RFC3161}} messageImprint value.
 
 The strings above represent the exact concatenated BASE64URL-encoded values used as signature input or timestamp hash inputs.
 
@@ -600,7 +600,7 @@ BASE64URL(signature)
 ~~~
 Figure 5: Chained Signing Hash Input Construction
 
-This hash input construction method uses the same concept as the JWS Signing Input construction model defined in RFC 7515.
+This hash input construction method uses the same concept as the JWS Signing Input construction model defined in {{!RFC7515}}.
 
 The hash value MUST be calculated using the algorithm specified by the corresponding "hashAlg" parameter.
 
@@ -618,7 +618,7 @@ The protected header "ltv" object is included in the JWS signature input and the
 
 ### Signature Creation
 
-The signature input of LTV-JWS MUST be constructed using the same method as the JWS Signing Input defined in RFC 7515.
+The signature input of LTV-JWS MUST be constructed using the same method as the JWS Signing Input defined in {{!RFC7515}}.
 
 The signature input is constructed by concatenating BASE64URL-encoded elements in the following order using the period "." character.
 
@@ -628,7 +628,7 @@ BASE64URL(payload)
 ~~~
 Figure 6: JWS Signature (SIG-B) Input Construction
 
-During signature generation, implementations MUST use the JWS JSON Serialization signature generation process defined in RFC 7515.
+During signature generation, implementations MUST use the JWS JSON Serialization signature generation process defined in {{!RFC7515}}.
 
 The protected header "ltv" object MUST contain at least the "signingCertHash" object.
 
@@ -638,11 +638,11 @@ The generated signature value is stored in the "signature" element.
 
 Implementations SHOULD preserve the signing certificate when constructing SIG-B objects in order to simplify future validation processing and support offline validation and long-term preservation.
 
-The signing certificate or certificate chain MAY be preserved within the optional "header.ltv.signing" parameter or by using the existing JWS "x5c" header parameter defined in RFC 7515.
+The signing certificate or certificate chain MAY be preserved within the optional "header.ltv.signing" parameter or by using the existing JWS "x5c" header parameter defined in {{!RFC7515}}.
 
 When used in SIG-B, the optional "header.ltv.signing" parameter MAY contain only the signing certificate or certificate chain without additional revocation information such as CRLs or OCSP responses.
 
-If the "x5c" parameter is used, it MAY be included in either the protected or unprotected header according to RFC 7515.
+If the "x5c" parameter is used, it MAY be included in either the protected or unprotected header according to {{!RFC7515}}.
 
 The "header.ltv.signing" parameter is stored in the unprotected header and therefore is not directly protected by the JWS signature. However, it can later be protected by archive timestamps.
 
@@ -669,13 +669,13 @@ BASE64URL(signature)
 ~~~
 Figure 7: Signature Timestamp Input Construction
 
-This hash input construction method extends the JWS Signing Input construction model defined in RFC 7515 by additionally including the signature value.
+This hash input construction method extends the JWS Signing Input construction model defined in {{!RFC7515}} by additionally including the signature value.
 
 During signature timestamp generation, implementations MUST generate the timestamp request using the hash input defined in the "Signature Timestamp Input Construction" section.
 
-If RFC 3161 timestamps are used, the messageImprint of the timestamp request MUST use the hash value calculated from the signature timestamp hash input.
+If {{!RFC3161}} timestamps are used, the messageImprint of the timestamp request MUST use the hash value calculated from the signature timestamp hash input.
 
-The generated RFC 3161 TimeStampToken is stored in the "tst" parameter within the decoded JSON object contained in "ltv.timestamp" in the unprotected header.
+The generated {{!RFC3161}} TimeStampToken is stored in the "tst" parameter within the decoded JSON object contained in "ltv.timestamp" in the unprotected header.
 
 If the "type" parameter of the timestamp is omitted, the default value is treated as "rfc3161".
 
@@ -749,7 +749,7 @@ The archive timestamp hash input is generated using the following procedure.
 
 10. If the next `archive` object exists within the current `archive` object, process the next `archive` object recursively and repeat from step 8.
 
-11. Finally, calculate the hash value of the resulting hash input and use the calculated hash value as the `messageImprint` of the RFC 3161 timestamp request for the target archive timestamp.
+11. Finally, calculate the hash value of the resulting hash input and use the calculated hash value as the `messageImprint` of the {{!RFC3161}} timestamp request for the target archive timestamp.
 
 For example, the hash input for a first-generation archive timestamp is as follows.
 
@@ -774,7 +774,7 @@ BASE64URL(header.ltv.archive.timestamp)
 ~~~
 Figure 9: Second-Generation Archive Timestamp Input
 
-An archive timestamp is generated by creating an RFC 3161 timestamp over the archive timestamp hash input.
+An archive timestamp is generated by creating an {{!RFC3161}} timestamp over the archive timestamp hash input.
 
 The generated timestamp is stored as the corresponding archive timestamp.
 
@@ -834,7 +834,7 @@ The validation result of SIG-B is determined as Valid, Invalid, or Indeterminate
 
 ### Signature Verification
 
-Implementations MUST perform JWS signature verification using the JWS Signature Input construction defined in RFC 7515.
+Implementations MUST perform JWS signature verification using the JWS Signature Input construction defined in {{!RFC7515}}.
 
 Implementations MUST verify the signature value using the signature algorithm specified by the JWS "alg" parameter.
 
@@ -872,9 +872,9 @@ During SIG-T validation, implementations MUST also validate SIG-B.
 
 During signature timestamp verification, implementations MUST reconstruct the signature timestamp hash input according to the signature timestamp input construction rules defined in the "Signature Timestamp Embedding" section.
 
-Implementations MUST verify that the reconstructed hash input matches the messageImprint contained in the RFC 3161 TimeStampToken.
+Implementations MUST verify that the reconstructed hash input matches the messageImprint contained in the {{!RFC3161}} TimeStampToken.
 
-Implementations MUST verify the signature value of the RFC 3161 TimeStampToken.
+Implementations MUST verify the signature value of the {{!RFC3161}} TimeStampToken.
 
 If the messageImprint does not match or TimeStampToken signature verification fails, the validation result MUST be treated as Invalid.
 
@@ -914,11 +914,11 @@ During SIG-LTA validation, implementations MUST validate SIG-B, SIG-T, and all e
 
 During archive timestamp verification, implementations MUST reconstruct the corresponding archive timestamp hash input according to the archive timestamp input construction rules defined in the "Archive Timestamp Embedding" section.
 
-Implementations MUST verify that the reconstructed hash input matches the messageImprint contained in the RFC 3161 TimeStampToken.
+Implementations MUST verify that the reconstructed hash input matches the messageImprint contained in the {{!RFC3161}} TimeStampToken.
 
 This includes reconstruction of recursive "archive" structures and any applicable "rehashes" elements.
 
-Implementations MUST verify the signature value of the RFC 3161 TimeStampToken.
+Implementations MUST verify the signature value of the {{!RFC3161}} TimeStampToken.
 
 If the messageImprint does not match or TimeStampToken signature verification fails, the validation result MUST be treated as Invalid.
 
@@ -946,9 +946,9 @@ If renewed external reference hash validation fails, the validation result MUST 
 
 # Security Considerations
 
-LTV-JWS preserves the processing model and security properties of JWS [RFC7515].
+LTV-JWS preserves the processing model and security properties of JWS {{!RFC7515}}.
 
-In addition, LTV-JWS adopts the long-term signature approach used in long-term signature formats such as XAdES.
+In addition, LTV-JWS adopts the long-term signature approach used in long-term signature formats such as XAdES [ISO14533-2].
 
 In the long-term signature approach, validation information and timestamps are maintained separately from the JWS signature in the unprotected header, and long-term integrity and authenticity are preserved through independent cryptographic protection and the continuous addition of archive timestamps.
 
@@ -1036,7 +1036,7 @@ The security, trustworthiness, persistence, availability, and retrieval policy o
 
 ## Signature Timestamp and Archive Timestamp Validation
 
-LTV-JWS uses RFC 3161 timestamps to prove that signatures, validation information, and archive information existed prior to a specific point in time.
+LTV-JWS uses {{!RFC3161}} timestamps to prove that signatures, validation information, and archive information existed prior to a specific point in time.
 
 A signature timestamp proves that the signed state consisting of the JWS protected header, payload, and signature existed prior to a specific point in time.
 
@@ -1076,7 +1076,7 @@ LTV-JWS uses both BASE64URL encoding and BASE64 encoding depending on the purpos
 
 Values used for JWS signing input construction, timestamp hash input construction, external reference hash input construction, and hash-based identifiers use BASE64URL encoding.
 
-In contrast, DER-encoded ASN.1 binary objects such as certificates, CRLs, OCSP responses, and RFC 3161 TimeStampTokens use BASE64 encoding consistent with the "x5c" parameter defined in RFC 7515.
+In contrast, DER-encoded ASN.1 binary objects such as certificates, CRLs, OCSP responses, and {{!RFC3161}} TimeStampTokens use BASE64 encoding consistent with the "x5c" parameter defined in {{!RFC7515}}.
 
 BASE64URL encoding and BASE64 encoding are not interchangeable and differ in character sets and padding rules.
 
@@ -1122,7 +1122,7 @@ Failure of cryptographic algorithm migration, inappropriate algorithm selection,
 
 ## Canonicalization and Deterministic Inputs
 
-LTV-JWS achieves deterministic signature inputs and hash inputs without using JSON canonicalization by reusing the JWS signing input model defined in RFC 7515.
+LTV-JWS achieves deterministic signature inputs and hash inputs without using JSON canonicalization by reusing the JWS signing input model defined in {{!RFC7515}}.
 
 JWS signature inputs, signature timestamp hash inputs, and archive timestamp hash inputs are constructed by concatenating BASE64URL-encoded values using the "." character.
 
@@ -1144,7 +1144,7 @@ The "signingTime" parameter in LTV-JWS represents the local system time used at 
 
 The "signingTime" value is informational and does not by itself provide cryptographically protected proof of signing time.
 
-Trusted signing time is generally established using trusted timestamp mechanisms such as RFC 3161 timestamps.
+Trusted signing time is generally established using trusted timestamp mechanisms such as {{!RFC3161}} timestamps.
 
 Implementations MUST NOT treat "signingTime" as trusted signing time. However, this restriction does not apply if the applicable validation policy permits the use of trusted local system time.
 
@@ -1172,7 +1172,7 @@ Implementations and operational environments should appropriately preserve valid
 
 # IANA Considerations
 
-This document requests the registration of the "ltv" JOSE Header Parameter in the JSON Web Signature and Encryption Header Parameters Registry defined by RFC 7515.
+This document requests the registration of the "ltv" JOSE Header Parameter in the JSON Web Signature and Encryption Header Parameters Registry defined by {{!RFC7515}}.
 
 This specification uses the "ltv" object within the JWS Protected Header, JWS Unprotected Header, and the payload.
 
@@ -1204,7 +1204,7 @@ The registration is as follows:
 - Change Controller: IETF
 - Specification Document(s): This specification
 
-The "ltv" Header Parameter MAY be included in the "crit" Header Parameter defined in RFC 7515.
+The "ltv" Header Parameter MAY be included in the "crit" Header Parameter defined in {{!RFC7515}}.
 
 Implementations that do not understand the "ltv" Header Parameter and encounter "ltv" in "crit" MUST reject the JWS.
 
@@ -1229,7 +1229,7 @@ These identifiers are used to identify the timestamp format contained in timesta
 
 This specification defines the following initial value:
 
-- "rfc3161": RFC 3161 TimeStampToken
+- "rfc3161": {{!RFC3161}} TimeStampToken
 
 Additional timestamp type identifiers may be defined by future specifications.
 
@@ -1245,7 +1245,7 @@ Additional hash algorithm identifiers may be defined by future specifications.
 
 This specification does not define new signature algorithms, hash algorithms, timestamp algorithms, or cryptographic primitives.
 
-LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RFC 7518, RFC 3161, and existing PKIX/CMS related specifications.
+LTV-JWS reuses existing algorithms and processing models defined in {{!RFC7515}}, {{!RFC7518}}, {{!RFC3161}}, and existing PKIX/CMS related specifications.
 
 --- back
 
@@ -1253,25 +1253,10 @@ LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RF
 
 ## Normative References
 
-[RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", RFC 2119.
-
-[RFC3161] Adams, C., Cain, P., Pinkas, D., and R. Zuccherato, "Internet X.509 Public Key Infrastructure Time-Stamp Protocol (TSP)", RFC 3161.
-
-[RFC3339] Klyne, G. and C. Newman, "Date and Time on the Internet: Timestamps", RFC 3339.
-
-[RFC5280] Cooper, D., Santesson, S., Farrell, S., Boeyen, S., Housley, R., and W. Polk, "Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile", RFC 5280.
-
-[RFC6960] Santesson, S., Myers, M., Ankney, R., Malpani, A., Galperin, S., and C. Adams, "X.509 Internet Public Key Infrastructure Online Certificate Status Protocol (OCSP)", RFC 6960.
-
-[RFC7515] Jones, M., Bradley, J., and N. Sakimura, "JSON Web Signature (JWS)", RFC 7515.
-
-[RFC7518] Jones, M., "JSON Web Algorithms (JWA)", RFC 7518.
-
-[RFC8174] Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words", RFC 8174.
 
 ## Informative References
 
-- ISO 14533-2 - Processes, data elements and documents in commerce, industry and administration - Long term signature profiles - Part 2: Profiles for XML Advanced Electronic Signatures (XAdES)
+[ISO14533-2] ISO/IEC 14533-2:2012, "Processes, data elements and documents in support of long-term signature profiles - Part 2: Profiles for XML advanced electronic signatures (XAdES)"
 
 # Appendix: LTV-JWS Example
 
@@ -1393,7 +1378,7 @@ The example demonstrates:
 * compatibility with existing JWS processing models
 * indirect signing using `ltv.refs`
 
-The `x5c` parameter is stored directly in the JWS header according to RFC 7515.
+The `x5c` parameter is stored directly in the JWS header according to {{!RFC7515}}.
 
 Some long BASE64URL and BASE64 values are shortened for readability.
 
@@ -1415,7 +1400,7 @@ This example shows a SIG-T LTV-JWS object generated by adding a signature timest
 
 The example demonstrates:
 
-* RFC 3161 signature timestamp
+* {{!RFC3161}} signature timestamp
 * `header.ltv.timestamp`
 * signature timestamp hash input construction
 
@@ -1447,7 +1432,7 @@ Decoded BASE64URL value of `header.ltv.timestamp`:
 ~~~
 Figure 18: Example of SIG-T Decoded value of `header.ltv.timestamp`
 
-The `tst` value contains a BASE64-encoded RFC 3161 TimeStampToken in DER format.
+The `tst` value contains a BASE64-encoded {{!RFC3161}} TimeStampToken in DER format.
 
 The Signature Timestamp Input for this example is constructed as:
 
@@ -1458,7 +1443,7 @@ BASE64URL(signature)
 ~~~
 Figure 19: Signature Timestamp Input Construction
 
-The RFC 3161 `messageImprint` value is calculated from the hash value of the Signature Timestamp Input.
+The {{!RFC3161}} `messageImprint` value is calculated from the hash value of the Signature Timestamp Input.
 
 If the `type` parameter is omitted, the timestamp type defaults to `"rfc3161"`.
 
@@ -1531,13 +1516,13 @@ Figure 22: Example of SIG-LTV Decoded value of `header.ltv.timestamp`
 
 The `validations.certs` array within the decoded BASE64URL value of `header.ltv.signing` contains the signing certificate and certificates required for PKIX validation of the signing certificate.
 
-The `validations.certs` array within the decoded BASE64URL value of `header.ltv.timestamp` contains the TSA certificate and certificates required for PKIX validation of the TSA certificate associated with the RFC 3161 timestamp.
+The `validations.certs` array within the decoded BASE64URL value of `header.ltv.timestamp` contains the TSA certificate and certificates required for PKIX validation of the TSA certificate associated with the {{!RFC3161}} timestamp.
 
 The embedded certificate values use BASE64 encoding because they are DER-encoded ASN.1 certificate objects.
 
 The embedded CRL values use BASE64 encoding because they are DER-encoded ASN.1 CRL objects.
 
-The `tst` value contains a BASE64-encoded RFC 3161 TimeStampToken in DER format.
+The `tst` value contains a BASE64-encoded {{!RFC3161}} TimeStampToken in DER format.
 
 Validation information preserved in SIG-LTV MAY include certificates, CRLs, OCSP responses and other validation-related information required for Long-Term Validation.
 
@@ -1585,7 +1570,7 @@ Decoded BASE64URL value of `header.ltv.archive.timestamp`:
 ~~~
 Figure 24: Example of SIG-LTA Decoded value of `header.ltv.archive.timestamp`
 
-The `tst` value contains a BASE64-encoded RFC 3161 TimeStampToken in DER format.
+The `tst` value contains a BASE64-encoded {{!RFC3161}} TimeStampToken in DER format.
 
 The Archive Timestamp Input for this example is constructed as:
 
@@ -1598,7 +1583,7 @@ BASE64URL(header.ltv.signing)
 ~~~
 Figure 25: Archive Timestamp Input
 
-The RFC 3161 `messageImprint` value of the archive timestamp is calculated from the hash value of the Archive Timestamp Input.
+The {{!RFC3161}} `messageImprint` value of the archive timestamp is calculated from the hash value of the Archive Timestamp Input.
 
 The archive timestamp protects the accumulated long-term validation state existing at the time of archive timestamp generation.
 
@@ -1659,13 +1644,13 @@ Decoded BASE64URL value of `header.ltv.archive.timestamp`:
 ~~~
 Figure 27: Example of SIG-LTV 2nd Decoded value of `header.ltv.archive.timestamp`
 
-The `header.ltv.archive.timestamp.validations.certs` array contains the archive TSA certificate and certificates required for PKIX validation of the archive TSA certificate associated with the RFC 3161 archive timestamp.
+The `header.ltv.archive.timestamp.validations.certs` array contains the archive TSA certificate and certificates required for PKIX validation of the archive TSA certificate associated with the {{!RFC3161}} archive timestamp.
 
 The embedded certificate values use BASE64 encoding because they are DER-encoded ASN.1 certificate objects.
 
 The embedded CRL values use BASE64 encoding because they are DER-encoded ASN.1 CRL objects.
 
-The `tst` value contains a BASE64-encoded RFC 3161 TimeStampToken in DER format.
+The `tst` value contains a BASE64-encoded {{!RFC3161}} TimeStampToken in DER format.
 
 The archive timestamp validation information becomes part of the accumulated long-term validation state protected by subsequent archive timestamps.
 
@@ -1716,7 +1701,7 @@ Decoded BASE64URL value of `header.ltv.archive.archive.timestamp`:
 ~~~
 Figure 29: Example of SIG-LTA 2nd Decoded value of `header.ltv.archive.archive.timestamp`
 
-The `tst` value contains a BASE64-encoded RFC 3161 TimeStampToken in DER format.
+The `tst` value contains a BASE64-encoded {{!RFC3161}} TimeStampToken in DER format.
 
 The second-generation archive timestamp protects the accumulated long-term validation state existing at the time of archive timestamp generation, including:
 
