@@ -14,7 +14,7 @@ author:
 
 This specification extends JSON Web Signature (JWS, {{!RFC7515}}) and defines LTV-JWS, a lightweight long-term signature format for Long-Term Validation (LTV).
 
-LTV-JWS adds signature extension elements, timestamps, validation information (certificates, CRLs, and OCSP responses), and archive structures as minimal extensions, thereby enabling the validity of signatures to be verified over extended periods of time. In addition, archive timestamps enable continued validation even after the obsolescence or compromise of cryptographic algorithms.
+LTV-JWS adds signature extension elements, timestamps {{!RFC3161}}, validation information (certificates {{!RFC5280}}, CRLs {{!RFC5280}}, and OCSP responses {{!RFC6960}}), and archive structures as minimal extensions, thereby enabling the validity of signatures to be verified over extended periods of time. In addition, archive timestamps enable continued validation even after the obsolescence or compromise of cryptographic algorithms.
 
 LTV-JWS preserves the simple structure and concept of JWS while progressively adding timestamps and validation information. It also enables more general-purpose signing use cases through indirect signatures using external references (refs).
 
@@ -300,7 +300,7 @@ Additional hash algorithm identifiers MAY be defined by future specifications or
 
 #### "hashValue" Parameter
 
-The "hashValue" parameter contains the BASE64URL-encoded hash value of the DER-encoded X.509 signing certificate calculated using the hash algorithm specified by the "hashAlg" parameter.
+The "hashValue" parameter contains the BASE64URL-encoded hash value of the DER-encoded X.509 signing certificate {{!RFC5280}} calculated using the hash algorithm specified by the "hashAlg" parameter.
 
 ## ltv Unprotected Header Object
 
@@ -320,7 +320,7 @@ The "validations" object contains the following parameters.
 
 The "validations" object MUST contain the "certs" parameter.
 
-The "certs" parameter contains an array of BASE64-encoded DER X.509 certificates required to validate the target certificate.
+The "certs" parameter contains an array of BASE64-encoded DER X.509 certificates {{!RFC5280}} required to validate the target certificate.
 
 The array MUST contain the target certificate (signing certificate or TSA certificate), certificates forming the certification path, and any additional certificates required for validation, such as certificates required for validation of OCSP responses or CRLs.
 
