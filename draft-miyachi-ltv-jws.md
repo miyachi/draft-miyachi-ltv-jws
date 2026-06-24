@@ -30,7 +30,7 @@ JSON Web Signatures (JWS) {{!RFC7515}}, a JSON-based signature format, are widel
 
 As an approach to Long-Term Validation (LTV), this specification defines four signature levels: the base signature level (SIG-B), the signature timestamp level (SIG-T), the long-term validation signature level containing validation information (SIG-LTV), and the long-term archive timestamp signature level (SIG-LTA). Furthermore, the continued addition of validation information and archive timestamps enables continued verification of signature validity, even after the obsolescence or compromise of cryptographic algorithms.
 
-Long-Term Validation for JSON Web Signature (LTV-JWS) is a JWS extension specification that defines a long-term signature format based on JWS JSON Serialization and a long-term validation approach similar to XAdES [ISO14533-2] for XML signatures.
+Long-Term Validation for JSON Web Signature (LTV-JWS) is a JWS extension specification that defines a long-term signature format based on JWS JSON Serialization and a long-term validation approach similar to XAdES (ISO 14533-2) for XML signatures.
 
 In addition, this specification supports an indirect signing model using external references (refs), allowing multiple arbitrary files, including non-JSON data, to be used as indirect signature targets. This indirect signing mechanism enables JWS to be used as a more general-purpose signature.
 
@@ -948,7 +948,7 @@ If renewed external reference hash validation fails, the validation result MUST 
 
 LTV-JWS preserves the processing model and security properties of JWS {{!RFC7515}}.
 
-In addition, LTV-JWS adopts the long-term signature approach used in long-term signature formats such as XAdES [ISO14533-2].
+In addition, LTV-JWS adopts the long-term signature approach used in long-term signature formats such as XAdES (ISO 14533-2).
 
 In the long-term signature approach, validation information and timestamps are maintained separately from the JWS signature in the unprotected header, and long-term integrity and authenticity are preserved through independent cryptographic protection and the continuous addition of archive timestamps.
 
@@ -1248,15 +1248,6 @@ This specification does not define new signature algorithms, hash algorithms, ti
 LTV-JWS reuses existing algorithms and processing models defined in {{!RFC7515}}, {{!RFC7518}}, {{!RFC3161}}, and existing PKIX/CMS related specifications.
 
 --- back
-
-# References
-
-## Normative References
-
-
-## Informative References
-
-[ISO14533-2] ISO/IEC 14533-2:2012, "Processes, data elements and documents in support of long-term signature profiles - Part 2: Profiles for XML advanced electronic signatures (XAdES)"
 
 # Appendix: LTV-JWS Example
 
