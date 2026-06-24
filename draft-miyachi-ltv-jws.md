@@ -3,6 +3,7 @@ title: "Long-Term Validation for JSON Web Signature (LTV-JWS)"
 abbrev: "LTV-JWS"
 docname: "draft-miyachi-ltv-jws-00"
 category: info
+ipr: trust200902
 submissiontype: IETF
 author:
   - name: Naoto Miyachi
