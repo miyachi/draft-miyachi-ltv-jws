@@ -65,7 +65,7 @@ all capitals, as shown here.
 
 ### LTV Diagram
 
-```text
+~~~ ascii-art
   +---------------------------------------------+
   | SIG-B (Create Base Signature)               |
   | Signature Base level                        |
@@ -92,12 +92,12 @@ all capitals, as shown here.
   +---------------------+-----------------------+         |
                         |                                 |
                         +---------------------------------+
-```
+~~~
 Figure 1: LTV-JWS Level Flow
 
 ### External Reference Diagram
 
-```text
+~~~ ascii-art
   +---------------------------------------------------------+
   | signature:                                              |
   +---------------------------+-----------------------------+
@@ -123,13 +123,12 @@ Figure 1: LTV-JWS Level Flow
      +-------------+  +-------------+  +-------------+
      |  data1.bin  |  |  file.json  |  |  data2.txt  |  ...
      +-------------+  +-------------+  +-------------+
-```
+~~~
 Figure 2: External Reference Model
 
 ### Chained Signing Diagram
 
-```text
-
+~~~ ascii-art
   +---------------------+        +---------------------+        +-------+
   | JWS-A (LTV-JWS)     |    +-->| JWS-B (LTV-JWS)     |    +-->| JWS-C |
   | +-----------------+ |    |   | +-----------------+ |    |   |       |
@@ -141,7 +140,7 @@ Figure 2: External Reference Model
   | | +-------------+ | |        | | +-------------+ | |
   | +-----------------+ |        | +-----------------+ |
   +---------------------+        +---------------------+
-```
+~~~
 Figure 3: Chained Signing Model
 
 ## Goals
