@@ -1249,7 +1249,13 @@ LTV-JWS reuses existing algorithms and processing models defined in {{!RFC7515}}
 
 --- back
 
-# Appendix: LTV-JWS Example
+# Appendix: LTV-JWS Examples
+
+The examples in this appendix are abbreviated for readability. Long BASE64URL values, certificates, CRLs, OCSP responses, timestamp tokens, and signature values are shortened.
+
+Complete example files are available in the GitHub repository:
+
+https://github.com/miyachi/draft-miyachi-ltv-jws/tree/main/examples
 
 ## Example SIG-B (examples/sig-b.json)
 
