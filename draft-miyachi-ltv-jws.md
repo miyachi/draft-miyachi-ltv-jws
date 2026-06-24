@@ -1,26 +1,23 @@
 ---
 title: "Long-Term Validation for JSON Web Signature (LTV-JWS)"
 abbrev: "LTV-JWS"
-docname: "draft-miyachi-ltv-jws-latest"
+docname: "draft-miyachi-ltv-jws-00"
 category: info
 submissiontype: IETF
 author:
   - name: Naoto Miyachi
-    organization: LangEdge,Inc.
+    organization: LangEdge, Inc.
+abstract: |
+  This specification extends JSON Web Signature (JWS, RFC 7515) and defines LTV-JWS, a lightweight long-term signature format for Long-Term Validation (LTV).
+
+  LTV-JWS adds signature extension elements, timestamps, validation information (certificates, CRLs, and OCSP responses), and archive structures as minimal extensions, thereby enabling the validity of signatures to be verified over extended periods of time.
+
+  LTV-JWS preserves the simple structure and concept of JWS while progressively adding timestamps and validation information. It also enables more general-purpose signing use cases through indirect signatures using external references (refs).
 ---
-
-# Abstract
-
-This specification extends JSON Web Signature (JWS, RFC 7515) and defines LTV-JWS, a lightweight long-term signature format for Long-Term Validation (LTV).
-
-LTV-JWS adds signature extension elements, timestamps, validation information (certificates, CRLs, and OCSP responses), and archive structures as minimal extensions, thereby enabling the validity of signatures to be verified over extended periods of time. In addition, archive timestamps enable continued validation even after the obsolescence or compromise of cryptographic algorithms.
-
-LTV-JWS preserves the simple structure and concept of JWS while progressively adding timestamps and validation information. It also enables more general-purpose signing use cases through indirect signatures using external references (refs).
 
 # Status of This Memo
 
-This Internet-Draft is submitted in full conformance with the
-provisions of BCP 78 and BCP 79.
+This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.
 
 # Introduction
 
@@ -1250,14 +1247,22 @@ LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RF
 
 ## Normative References
 
-- RFC 7515 - JSON Web Signature (JWS)
-- RFC 7518 - JSON Web Algorithms (JWA)
-- RFC 3161 - Internet X.509 Public Key Infrastructure Time-Stamp Protocol (TSP)
-- RFC 5280 - Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
-- RFC 6960 - X.509 Internet Public Key Infrastructure Online Certificate Status Protocol (OCSP)
-- RFC 3339 - Date and Time on the Internet: Timestamps
-- RFC 2119 - Key words for use in RFCs to Indicate Requirement Levels
-- RFC 8174 - Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words
+{:vspace}
+[RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", RFC 2119.
+
+[RFC3161] Adams, C., Cain, P., Pinkas, D., and R. Zuccherato, "Internet X.509 Public Key Infrastructure Time-Stamp Protocol (TSP)", RFC 3161.
+
+[RFC3339] Klyne, G. and C. Newman, "Date and Time on the Internet: Timestamps", RFC 3339.
+
+[RFC5280] Cooper, D., Santesson, S., Farrell, S., Boeyen, S., Housley, R., and W. Polk, "Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile", RFC 5280.
+
+[RFC6960] Santesson, S., Myers, M., Ankney, R., Malpani, A., Galperin, S., and C. Adams, "X.509 Internet Public Key Infrastructure Online Certificate Status Protocol (OCSP)", RFC 6960.
+
+[RFC7515] Jones, M., Bradley, J., and N. Sakimura, "JSON Web Signature (JWS)", RFC 7515.
+
+[RFC7518] Jones, M., "JSON Web Algorithms (JWA)", RFC 7518.
+
+[RFC8174] Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words", RFC 8174.
 
 ## Informative References
 
