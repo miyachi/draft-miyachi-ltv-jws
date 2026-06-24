@@ -15,7 +15,12 @@ jobs:
 
       - name: Install Ruby tools
         run: |
-          sudo gem install kramdown-rfc
+          sudo gem install kramdown-rfc2629
+
+      - name: Show tool versions
+        run: |
+          ruby --version
+          gem list | grep kramdown
 
       - name: Install Python tools
         run: |
@@ -24,7 +29,9 @@ jobs:
 
       - name: Generate RFC XML
         run: |
-          kramdown-rfc draft-miyachi-ltv-jws.md > draft-miyachi-ltv-jws.xml
+          kramdown-rfc2629 draft-miyachi-ltv-jws.md > draft-miyachi-ltv-jws.xml
+          echo "===== XML HEAD ====="
+          head -100 draft-miyachi-ltv-jws.xml
 
       - name: Generate TXT and HTML
         run: |
