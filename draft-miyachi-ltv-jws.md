@@ -7,13 +7,17 @@ submissiontype: IETF
 author:
   - name: Naoto Miyachi
     organization: LangEdge, Inc.
-abstract: |
-  This specification extends JSON Web Signature (JWS, RFC 7515) and defines LTV-JWS, a lightweight long-term signature format for Long-Term Validation (LTV).
-
-  LTV-JWS adds signature extension elements, timestamps, validation information (certificates, CRLs, and OCSP responses), and archive structures as minimal extensions, thereby enabling the validity of signatures to be verified over extended periods of time.
-
-  LTV-JWS preserves the simple structure and concept of JWS while progressively adding timestamps and validation information. It also enables more general-purpose signing use cases through indirect signatures using external references (refs).
 ---
+
+--- abstract
+
+This specification extends JSON Web Signature (JWS, RFC 7515) and defines LTV-JWS, a lightweight long-term signature format for Long-Term Validation (LTV).
+
+LTV-JWS adds signature extension elements, timestamps, validation information (certificates, CRLs, and OCSP responses), and archive structures as minimal extensions, thereby enabling the validity of signatures to be verified over extended periods of time. In addition, archive timestamps enable continued validation even after the obsolescence or compromise of cryptographic algorithms.
+
+LTV-JWS preserves the simple structure and concept of JWS while progressively adding timestamps and validation information. It also enables more general-purpose signing use cases through indirect signatures using external references (refs).
+
+--- middle
 
 # Status of This Memo
 
@@ -1242,6 +1246,8 @@ Additional hash algorithm identifiers may be defined by future specifications.
 This specification does not define new signature algorithms, hash algorithms, timestamp algorithms, or cryptographic primitives.
 
 LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RFC 7518, RFC 3161, and existing PKIX/CMS related specifications.
+
+--- back
 
 # References
 
