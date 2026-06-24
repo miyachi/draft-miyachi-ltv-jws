@@ -1,0 +1,41 @@
+name: Build Internet-Draft
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Ruby tools
+        run: |
+          sudo gem install kramdown-rfc
+
+      - name: Install Python tools
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install xml2rfc
+
+      - name: Generate RFC XML
+        run: |
+          kramdown-rfc draft-miyachi-ltv-jws.md > draft-miyachi-ltv-jws.xml
+
+      - name: Generate TXT and HTML
+        run: |
+          xml2rfc draft-miyachi-ltv-jws.xml --text
+          xml2rfc draft-miyachi-ltv-jws.xml --html
+
+      - name: Upload generated draft files
+        uses: actions/upload-artifact@v4
+        with:
+          name: draft-miyachi-ltv-jws
+          path: |
+            draft-miyachi-ltv-jws.xml
+            draft-miyachi-ltv-jws.txt
+            draft-miyachi-ltv-jws.html
