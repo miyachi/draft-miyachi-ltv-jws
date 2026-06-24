@@ -32,6 +32,7 @@ jobs:
           xml2rfc draft-miyachi-ltv-jws.xml --html
 
       - name: Upload generated draft files
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: draft-miyachi-ltv-jws
