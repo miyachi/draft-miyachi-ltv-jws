@@ -1253,7 +1253,6 @@ LTV-JWS reuses existing algorithms and processing models defined in RFC 7515, RF
 
 ## Normative References
 
-{:vspace}
 [RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", RFC 2119.
 
 [RFC3161] Adams, C., Cain, P., Pinkas, D., and R. Zuccherato, "Internet X.509 Public Key Infrastructure Time-Stamp Protocol (TSP)", RFC 3161.
