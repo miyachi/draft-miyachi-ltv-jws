@@ -27,9 +27,9 @@ The design preserves the existing JWS processing model while enabling long-term 
 
 * `draft-miyachi-ltv-jws`
 
-The latest Internet-Draft is available from the IETF Datatracker after publication.
+The latest Internet-Draft is available from the IETF Datatracker:
 
-*(Datatracker URL will be added after submission.)*
+https://datatracker.ietf.org/doc/draft-miyachi-ltv-jws/
 
 ## Repository Contents
 
