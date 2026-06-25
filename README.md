@@ -25,7 +25,7 @@ The design preserves the existing JWS processing model while enabling long-term 
 
 ## Current Draft
 
-* `draft-miyachi-ltv-jws-00`
+* `draft-miyachi-ltv-jws`
 
 The latest Internet-Draft is available from the IETF Datatracker after publication.
 
@@ -34,6 +34,7 @@ The latest Internet-Draft is available from the IETF Datatracker after publicati
 ## Repository Contents
 
 ```
+README.md                    README
 draft-miyachi-ltv-jws.md     Markdown source
 draft-miyachi-ltv-jws.xml    RFCXML source
 draft-miyachi-ltv-jws.txt    Internet-Draft text
@@ -61,7 +62,9 @@ xml2rfc
 
 Comments and suggestions are welcome.
 
-For technical discussion, please use the IETF JOSE Working Group mailing list after the draft has been announced.
+Please use the IETF JOSE Working Group mailing list for technical discussion.
+
+Email: miyachi@langedge.jp
 
 ## License
 
