@@ -8,6 +8,7 @@ submissiontype: IETF
 author:
   - name: Naoto Miyachi
     organization: LangEdge, Inc.
+    email: miyachi@langedge.jp
 ---
 
 --- abstract
@@ -19,10 +20,6 @@ LTV-JWS adds signature extension elements, timestamps {{!RFC3161}}, validation i
 LTV-JWS preserves the simple structure and concept of JWS while progressively adding timestamps and validation information. It also enables more general-purpose signing use cases through indirect signatures using external references (refs).
 
 --- middle
-
-# Status of This Memo
-
-This Internet-Draft is submitted in full conformance with the provisions of BCP 78 and BCP 79.
 
 # Introduction
 
@@ -686,7 +683,7 @@ SIG-LTV MAY be constructed after validation of SIG-T or SIG-LTA.
 
 SIG-LTV preserves validation information used for validation of signing certificates and all timestamp TSA certificates in order to enable Long-Term Validation of signatures in the future without depending on external validation services or network access.
 
-#### from SIG-T Validation Information Embedding
+### from SIG-T Validation Information Embedding
 
 When constructing SIG-LTV from SIG-T, implementations MUST preserve the validation information actually used during SIG-T validation.
 
@@ -699,7 +696,7 @@ Validation information related to the signing certificate MUST be stored as a BA
 
 Validation information related to the signature timestamp TSA certificate MUST be stored in the "validations" object within the decoded JSON object contained in the corresponding signature "timestamp" parameter.
 
-#### from SIG-LTA Validation Information Embedding
+### from SIG-LTA Validation Information Embedding
 
 When constructing SIG-LTV from SIG-LTA, implementations MUST preserve the validation information actually used during SIG-LTA validation.
 
