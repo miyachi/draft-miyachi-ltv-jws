@@ -1849,7 +1849,7 @@ Figure 34: Example of Chained Signing
 
 Decoded BASE64URL value of `payload`:
 
-~~~ json id="1bzh0x"
+~~~ json
 {
   "ltv": {
     "refs": [
